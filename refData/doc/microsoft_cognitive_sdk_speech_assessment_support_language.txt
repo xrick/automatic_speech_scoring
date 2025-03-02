@@ -1,0 +1,71 @@
+本節中的表格會摘要說明支援發音評定的 33 個地區設定，而且每個語言都可以在所有語音轉換文字區域中使用。 最新更新將支援的語言從英文延伸至 32 種以上的語言，並針對現有功能的品質進行增強，包括精確度、流暢度和誤讀評估。 您應該指定要學習或練習改善發音的語言。 預設語言為 en-US。 如果您知道目標學習語言，請相應地設定地區設定。 例如，如果您要學習英式英文，您應該將語言指定為 en-GB 。 如果您正在教導更廣泛的語言，例如西班牙文，而且不確定要選取的地區設定，您可以執行各種腔調模型 (es-ES，es-MX) 來確定一個能達到最高分數的腔調模型，以適應您的具體案例。 如果您對下表中未列出的語言感興趣，請填寫此輸入表單以取得進一步協助。
+
+
+============================可用語言============================
+語言	地區設定 (BCP-47)
+阿拉伯文 (埃及)	ar-EG
+阿拉伯文 (沙烏地阿拉伯)	ar-SA
+加泰蘭文	ca-ES
+中文 (廣東話，繁體)	zh-HK
+中文 (國語，簡體)	zh-CN
+中文 (國語，繁體)	zh-TW
+丹麥文 (丹麥)	da-DK
+荷蘭文 (荷蘭)	nl-NL
+英文 (澳大利亞)	en-AU
+英文 (加拿大)	en-CA
+英文 (印度)	en-IN
+英文 (英國)	en-GB
+英文 (美國)	en-US
+芬蘭文 (芬蘭)	fi-FI
+法文 (加拿大)	fr-CA
+法文 (法國)	fr-FR
+德文 (德國)	de-DE
+印度文 (印度)	hi-IN
+義大利文 (義大利)	it-IT
+日文 (日本)	ja-JP
+韓文 (韓國)	ko-KR
+馬來文 (馬來西亞)	ms-MY
+巴克摩挪威文 (挪威)	nb-NO
+波蘭文 (波蘭)	pl-PL
+葡萄牙文 (巴西)	pt-BR
+葡萄牙文 (葡萄牙)	pt-PT
+俄文 (俄羅斯)	ru-RU
+西班牙文 (墨西哥)	es-MX
+西班牙文 (西班牙)	es-ES
+瑞典文 (瑞典)	sv-SE
+坦米爾文 (印度)	ta-IN
+泰文 (泰國)	th-TH
+越南文 (越南)	vi-VN
+
+============================可用區域============================
+地理位置	區域	區域識別碼
+非洲	南非北部	southafricanorth
+亞太地區	東亞	eastasia
+亞太地區	東南亞	southeastasia
+亞太地區	澳大利亞東部	australiaeast
+亞太地區	印度中部	centralindia
+亞太地區	日本東部	japaneast
+亞太地區	日本西部	japanwest
+亞太地區	南韓中部	koreacentral
+Canada	加拿大中部	canadacentral
+歐洲	北歐	northeurope
+歐洲	西歐	westeurope
+歐洲	法國中部	francecentral
+歐洲	德國中西部	germanywestcentral
+歐洲	挪威東部	norwayeast
+歐洲	瑞典中部	swedencentral
+歐洲	瑞士北部	switzerlandnorth
+歐洲	瑞士西部	switzerlandwest
+歐洲	英國南部	uksouth
+中東	阿拉伯聯合大公國北部	uaenorth
+南美洲	巴西南部	brazilsouth
+卡達	卡達中部	qatarcentral
+美國	美國中部	centralus
+美國	美國東部	eastus
+美國	美國東部 2	eastus2
+美國	美國中北部	northcentralus
+美國	美國中南部	southcentralus
+美國	美國中西部	westcentralus
+美國	美國西部	westus
+美國	美國西部 2	westus2
+美國	美國西部 3	westus3
