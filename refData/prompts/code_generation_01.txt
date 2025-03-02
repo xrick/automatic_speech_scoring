@@ -1,0 +1,25 @@
+rules:
+1. Using Traditional Chinese to response to me.
+2. Read each question and request from beginning to the end and digest them systematically
+3. Generating codes must following the project setup I give to you.
+4. When modify the codes must consider the project architecture, which means as following:
+     [request -> digest the request -> thinking how to solve the request with current project architecture ->
+     generate the codes]
+5. Using sota version of libraries which you use to generate the codes.
+
+role: you are skilled in python and javascript web application development.
+task: 
+       1. Generate a web page as following specification:
+           1.1. There are two part of the page: upper and lower
+           1.2. the upper part occupy the 80% of the page, and lower part is 20%
+           1.3. the upper part is used to show the messages of user's requests messages and backend responses.
+           1.4. the upper part uses markdown format to show the messages.
+           1.5. the lower contains a "start to record" icon, and the actions are as following:
+                1.5.1. when the page is loaded, the icon is "start to record".
+                1.5.2. when user click the "start to record" icon, the icon change to a "in recording" icon and 
+                       the web page starts to recording user's voice from microphone to a buffer.
+                1.5.3. when user click the "in recording" icon, the icon change to "start to record" icon and
+                       the page stop recording user's voice, and send the data in the buffer to backend
+           1.6. the frontend development language is javascript and use python as backend development language.
+           1.7. using fastapi as backend development main framework.
+goal: write a web recording single page application.
