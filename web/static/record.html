@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
@@ -60,23 +61,82 @@
         .recording {
             background-color: #ff4444 !important;
         }
+        /* 文本输入框样式 */
+        #reference-text {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        #reference-text:focus {
+            border-color: #2196F3;
+            outline: none;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            #input-section {
+                width: 90%;
+                margin-right: 0;
+            }
+        }
     </style>
 </head>
 <body>
     <div id="message-area"></div>
     <div id="control-area">
-        <button id="record-button">
-            <!-- Start Recording Icon -->
-            <svg id="start-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <circle cx="12" cy="12" r="3" fill="currentColor"/>
-            </svg>
-            <!-- Recording Icon (initially hidden) -->
-            <svg id="recording-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
-                <rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor"/>
-            </svg>
-        </button>
+        <div id="input-section" style="
+            width: 70%; 
+            margin-right: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        ">
+            <!-- 调整后的文本输入框 -->
+            <textarea 
+                id="reference-text" 
+                placeholder="請在此輸入參考文本..."
+                style="
+                    width: 90%;  /* 设置为输入区域的90%宽度 */
+                    height: 80px;
+                    padding: 10px;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 8px;
+                    resize: vertical;
+                    font-family: 'Microsoft JhengHei', sans-serif;
+                    margin-bottom: 15px;  /* 增加与按钮间距 */
+                    transition: all 0.3s ease;
+                "
+            ></textarea>
+            
+            
+            <button 
+                id="record-button" 
+                style="
+                    width: 64px;  /* 恢复圆形尺寸 */
+                    height: 64px;
+                    border-radius: 50%;  /* 圆形设置 */
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                    transition: all 0.3s ease;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                "
+            >
+                
+                <svg id="start-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                </svg>
+                <svg id="recording-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                    <rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor"/>
+                </svg>
+            </button>
+        </div>
     </div>
+
     
     <script>
         let mediaRecorder;
@@ -87,6 +147,7 @@
         const recordButton = document.getElementById('record-button');
         const startIcon = document.getElementById('start-icon');
         const recordingIcon = document.getElementById('recording-icon');
+        const referenceTextInput = document.getElementById('reference-text');
         
         // 添加訊息到顯示區域
         function addMessage(content, type = 'user') {
@@ -146,12 +207,20 @@
             addMessage('錄音結束，正在處理...');
         }
         
+        
         // 發送音頻數據到後端
         async function sendAudioData() {
+            const referenceText = referenceTextInput.value.trim();
+            if (!referenceText) {
+                addMessage('錯誤：請輸入參考文本');
+                return;
+            }
+
             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
             const formData = new FormData();
             formData.append('audio', audioBlob, 'recording.webm');
-            
+            formData.append('reference_text', referenceText);  // 添加参考文本
+
             try {
                 const response = await fetch('/upload-audio', {
                     method: 'POST',
@@ -159,14 +228,43 @@
                 });
                 
                 const result = await response.json();
-                addMessage(`服務器回應: ${result.message}`);
+                addMessage(`評估結果：${JSON.stringify(result.assessment, null, 2)}`);
             } catch (error) {
                 console.error('上傳錯誤:', error);
                 addMessage(`上傳錯誤: ${error.message}`);
             }
         }
-        
         recordButton.addEventListener('click', toggleRecording);
     </script>
+    <style>
+        /* 新增响应式设计 */
+        @media (max-width: 768px) {
+            #input-section {
+                width: 90%;
+            }
+            #reference-text {
+                width: 100%;  /* 小屏幕时占满宽度 */
+            }
+        }
+
+        /* 按钮交互优化 */
+        #record-button:hover {
+            transform: scale(1.1);
+            background-color: #f8f8f8;
+        }
+
+        #record-button:active {
+            transform: scale(0.95);
+        }
+
+        /* 输入框聚焦效果 */
+        #reference-text:focus {
+            border-color: #2196F3;
+            box-shadow: 0 0 5px rgba(33,150,243,0.3);
+        }
+    </style>
 </body>
 </html>
+
+    
+    
