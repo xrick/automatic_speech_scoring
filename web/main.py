@@ -22,7 +22,7 @@ async def root():
 
 
 # Azure 語音服務配置
-SPEECH_KEY = "7c400507-6b30-4a2f-97f9-5baa6c9e4e28"#os.getenv("AZURE_SPEECH_KEY", "your_speech_key")
+SPEECH_KEY = "7c400507-6b30-4a2f-97f9-5baa6c9e4e28"#os.getenv("AZURE_SPEECH_KEY", "your_speech_key")expired.
 SPEECH_REGION = "en-US"#os.getenv("AZURE_SPEECH_REGION", "your_region")
 def perform_pronunciation_assessment(audio_file: str, reference_text: str) -> dict:
     """執行發音評估"""
