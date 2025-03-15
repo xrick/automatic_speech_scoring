@@ -6,6 +6,10 @@ import os
 from datetime import datetime
 import azure.cognitiveservices.speech as speechsdk
 from typing import Optional
+from contextlib import asynccontextmanager
+
+from langchain_ollama.llms import OllamaLLM
+from faster_whisper import WhisperModel
 
 app = FastAPI()
 
@@ -24,6 +28,37 @@ async def root():
 # Azure 語音服務配置
 SPEECH_KEY = "7c400507-6b30-4a2f-97f9-5baa6c9e4e28"#os.getenv("AZURE_SPEECH_KEY", "your_speech_key")expired.
 SPEECH_REGION = "en-US"#os.getenv("AZURE_SPEECH_REGION", "your_region")
+
+# local faster-whisper model setup
+WHISPER_MODEL_TYPE = "distil-large-v3";
+WHISPER_MODEL_PATH = "/Users/xrickliao/WorkSpaces/LLM_Repo/models/Whisper/Models/faster_distil_whisper_large_v3_snapdwn/";
+whisper_model=None;
+
+# local llm setup
+LLM_MODEL='phi4:latest';
+SPELL_CORRECT_PROMPT='''
+    role:you are a perfect english spelling checker.
+    task:
+    1.please do spelling checking for the following senteces.
+    2.Do not change the style, form, and structure of the sentences.
+    3.only return the corrected sentences
+    sentences:\n{0}\n
+'''
+llm=None;
+
+# fastapi startup setup
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Load the ML model
+    whisper_model = WhisperModel(WHISPER_MODEL_TYPE, device="cpu", compute_type="int8", 
+                                 download_root=WHISPER_MODEL_PATH, local_files_only=True);
+    llm = OllamaLLM(model=LLM_MODEL);
+    yield
+    # Clean up objects and release the resources
+    whisper_model = None;
+    llm = None;
+
+
 def perform_pronunciation_assessment(audio_file: str, reference_text: str) -> dict:
     """執行發音評估"""
     # try:
@@ -80,6 +115,10 @@ def perform_pronunciation_assessment(audio_file: str, reference_text: str) -> di
     # except Exception as e:
     #     raise Exception(f"Pronunciation assessment failed: {str(e)}")
 
+def gen_ref_text(audio_file:str=None):
+    ref_txt = "no content"
+    return ref_txt
+
 @app.post("/upload-audio")
 async def upload_audio(audio: UploadFile = File(...), reference_text: str = Form(...)):
 # async def upload_audio(audio: UploadFile = File(...)):
@@ -103,9 +142,10 @@ async def upload_audio(audio: UploadFile = File(...), reference_text: str = Form
         audio_segment = AudioSegment.from_file(webm_filepath)
         audio_segment.export(wav_filepath, format="wav")
         
-        reference_text = """
-            This is speech assessment, pleas say: hello, I am very good
-        """
+        # reference_text = """
+        #     This is speech assessment, pleas say: hello, I am very good
+        # """
+        reference_text = gen_refence_text()
         
         # 執行發音評估
         assessment_result = perform_pronunciation_assessment(
