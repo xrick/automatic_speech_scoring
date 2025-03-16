@@ -217,7 +217,6 @@
             addMessage('錄音結束，正在處理...');
         }
         
-        
         // 發送音頻數據到後端
         async function sendAudioData() {
             const referenceText = referenceTextInput.value.trim();
@@ -229,8 +228,7 @@
             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
             const formData = new FormData();
             formData.append('audio', audioBlob, 'recording.webm');
-            formData.append('reference_text', referenceText);  // 添加参考文本
-
+            //formData.append('reference_text', referenceText);  // 添加参考文本
             try {
                 const response = await fetch('/upload-audio', {
                     method: 'POST',
@@ -238,7 +236,9 @@
                 });
                 
                 const result = await response.json();
-                addMessage(`評估結果：${JSON.stringify(result.assessment, null, 2)}`);
+                addMessage(`處理結果：${JSON.stringify(result.message)}`);
+                //目前azure speech ai services無法使用，因為沒有key
+                //addMessage(`評估結果：${JSON.stringify(result.assessment, null, 2)}`);
             } catch (error) {
                 console.error('上傳錯誤:', error);
                 addMessage(`上傳錯誤: ${error.message}`);
@@ -246,15 +246,6 @@
         }
         recordButton.addEventListener('click', toggleRecording);
 
-        /*document.addEventListener('DOMContentLoaded', () => {
-            const recordBtn = document.getElementById('record-button');
-            
-            // 添加雙重事件監聽
-            recordBtn.addEventListener('click', toggleRecording);
-            recordBtn.onclick = toggleRecording;
-            
-            console.log('[DEBUG] 按鈕事件已綁定');  // 添加調試日誌
-        });*/ 
     </script>
     <style>
         /* 新增响应式设计 */
