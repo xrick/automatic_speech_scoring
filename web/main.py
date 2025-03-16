@@ -115,9 +115,18 @@ def perform_pronunciation_assessment(audio_file: str, reference_text: str) -> di
     # except Exception as e:
     #     raise Exception(f"Pronunciation assessment failed: {str(e)}")
 
-def gen_ref_text(audio_file:str=None):
-    ref_txt = "no content"
+def gen_refence_text(audio_file:str=None):
+    segments, info = whisper_model.transcribe(audio_file,  beam_size=5, language="en")
+    # print("Detected language '%s' with probability %f" % (info.language, info.language_probability))
+    trans_txt = "";
+    for segment in segments:
+        print("[%.2fs -> %.2fs] %s" % (segment.start, segment.end, segment.text))
+        trans_txt += segment.text
+        
+    ref_txt = llm.invoke(SPELL_CORRECT_PROMPT.format(trans_txt));
+    print(f"the corrected transcribe text:\n{trans_txt}");
     return ref_txt
+    
 
 @app.post("/upload-audio")
 async def upload_audio(audio: UploadFile = File(...), reference_text: str = Form(...)):
@@ -145,20 +154,21 @@ async def upload_audio(audio: UploadFile = File(...), reference_text: str = Form
         # reference_text = """
         #     This is speech assessment, pleas say: hello, I am very good
         # """
-        reference_text = gen_refence_text()
+        reference_text = gen_refence_text(audio_file=wav_filepath);
         
         # 執行發音評估
-        assessment_result = perform_pronunciation_assessment(
-            wav_filepath, 
-            reference_text
-        )
+        # assessment_result = perform_pronunciation_assessment(
+        #     wav_filepath, 
+        #     reference_text
+        # )
         
         return JSONResponse(
             content={
                 "message": f"錄音已成功保存並轉換",
                 "webm_file": webm_filename,
                 "wav_file": wav_filename,
-                "assessment": assessment_result
+                "ref_txt": reference_text
+                # "assessment": assessment_result
             },
             status_code=200
         )

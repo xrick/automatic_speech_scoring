@@ -210,26 +210,25 @@
         
         // 發送音頻數據到後端
         async function sendAudioData() {
-            const referenceText = referenceTextInput.value.trim();
-            if (!referenceText) {
+            //const referenceText = referenceTextInput.value.trim();
+            //if (!referenceText) {
                 //addMessage('錯誤：請輸入參考文本');
-                addMessage('手動加入參考文本(目前未需要)');
-                return;
-            }
-
+                //addMessage('手動加入參考文本(目前未需要)');
+                //return;
+           // }
             const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
             const formData = new FormData();
             formData.append('audio', audioBlob, 'recording.webm');
-            formData.append('reference_text', referenceText);  // 添加参考文本
-
+            //formData.append('reference_text', referenceText);  // 添加参考文本
             try {
                 const response = await fetch('/upload-audio', {
                     method: 'POST',
                     body: formData
                 });
-                
                 const result = await response.json();
-                addMessage(`評估結果：${JSON.stringify(result.assessment, null, 2)}`);
+                addMessage(`處理結果：${JSON.stringify(result.message)}`);
+                addMessage(`轉譯的參考文本：${JSON.stringify(result.message)}`)
+                //addMessage(`評估結果：${JSON.stringify(result.assessment, null, 2)}`);
             } catch (error) {
                 console.error('上傳錯誤:', error);
                 addMessage(`上傳錯誤: ${error.message}`);
