@@ -171,8 +171,17 @@
         // 開始錄音
         async function startRecording() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                mediaRecorder = new MediaRecorder(stream);
+                    const permission = await navigator.permissions.query({ name: 'microphone' });
+                    if (permission.state === 'denied') {
+                        alert('請在瀏覽器設置中啟用麥克風權限！');
+                        return;
+                    }
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    mediaRecorder.onerror = (event) => {
+                        console.error('錄音設備錯誤:', event.error);
+                        addMessage(`硬體錯誤: ${event.error.message}`);
+                };
                 
                 mediaRecorder.ondataavailable = (event) => {
                     audioChunks.push(event.data);

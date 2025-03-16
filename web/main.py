@@ -6,9 +6,18 @@ import os
 from datetime import datetime
 import azure.cognitiveservices.speech as speechsdk
 from typing import Optional
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
-
+# 在 app = FastAPI() 之後添加
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8000"],
+    allow_credentials=True,
+    allow_methods=["POST", "GET"],
+    allow_headers=["*"],
+    expose_headers=["*"]
+)
 # 設置靜態文件目錄
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
@@ -84,8 +93,10 @@ def perform_pronunciation_assessment(audio_file: str, reference_text: str) -> di
     #     raise Exception(f"Pronunciation assessment failed: {str(e)}")
 
 @app.post("/upload-audio")
-async def upload_audio(audio: UploadFile = File(...), reference_text: str = Form(...)):
-# async def upload_audio(audio: UploadFile = File(...)):
+# async def upload_audio(audio: UploadFile = File(...), reference_text: str = Form(...)):
+async def upload_audio(audio: UploadFile = File(...)):
+    if audio.content_type not in ["audio/webm", "audio/wav"]:
+        return JSONResponse({"error": "不支援的文件格式"}, 415)
     try:
         # 生成時間戳記
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
