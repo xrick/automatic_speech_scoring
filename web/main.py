@@ -1,6 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse, FileResponse
 from pydub import AudioSegment
 import os
 from datetime import datetime
@@ -20,6 +20,9 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 async def root():
     return RedirectResponse(url="/static/record.html")
 
+@app.get("/favicon.ico", include_in_schema=False)
+async def get_favicon():
+    return FileResponse("static/favicon.ico")
 
 # Azure 語音服務配置
 SPEECH_KEY = "7c400507-6b30-4a2f-97f9-5baa6c9e4e28"#os.getenv("AZURE_SPEECH_KEY", "your_speech_key")expired.
