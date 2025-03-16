@@ -1,0 +1,30 @@
+from fastapi import FastAPI, UploadFile, File, Form
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse, RedirectResponse, FileResponse
+from pydub import AudioSegment
+import os
+from datetime import datetime
+import azure.cognitiveservices.speech as speechsdk
+from typing import Optional
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI()
+# 在 app = FastAPI() 之後添加
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8000"],
+    allow_credentials=True,
+    allow_methods=["POST", "GET"],
+    allow_headers=["*"],
+    expose_headers=["*"]
+)
+# 設置靜態文件目錄
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# 確保錄音文件存儲目錄存在
+UPLOAD_DIR = "recordings"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+@app.get("/")
+async def root():
+    return RedirectResponse(url="/static/record.html")
