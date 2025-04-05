@@ -1,0 +1,43 @@
+
+
+主題性自由對話語音評測系統/
+├── app.py                 # FastAPI 後端
+├── streamlit_app.py       # Streamlit 前端
+├── requirements.txt       # 依賴列表
+├── .env                   # 環境變數配置
+└── audio_files/           # 音頻檔存儲目錄
+
+.env 檔案內容範例
+AZURE_SPEECH_KEY=your_azure_speech_key_here
+AZURE_SPEECH_REGION=eastus
+AZURE_SPEECH_ENDPOINT=https://eastus.api.cognitive.microsoft.com/
+
+requirements.txt 內容
+fastapi==0.104.1
+uvicorn==0.23.2
+streamlit==1.28.0
+python-multipart==0.0.6
+python-dotenv==1.0.0
+requests==2.31.0
+azure-cognitiveservices-speech==1.32.1
+numpy==1.25.2
+
+安裝與運行說明
+
+安裝所需依賴：
+pip install -r requirements.txt
+
+配置 Azure Speech 服務：
+創建一個 .env 文件
+填入您的 Azure Speech 服務密鑰和區域
+
+啟動 FastAPI 後端：
+uvicorn app:app --reload
+
+在另一個終端啟動 Streamlit 前端：
+streamlit run streamlit_app.py
+
+
+在瀏覽器中訪問 http://localhost:8501 使用系統
+此系統提供了完整的主題性自由對話語音評測功能，包括主題選擇、圖片生成、語音錄製、轉錄和評測等核心功能。
+系統使用 Azure Speech Services 進行語音處理，並提供了詳細的評測結果和改進建議。
