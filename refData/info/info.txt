@@ -1,4 +1,12 @@
 
+訂用帳戶名稱
+Azure subscription 1
+
+資源群組
+speech_assessment_1
+
+資源識別碼
+/subscriptions/7c400507-6b30-4a2f-97f9-5baa6c9e4e28/resourceGroups/speech_assessment_1/providers/Microsoft.CognitiveServices/accounts/speechscoring01
 
 subcribe id:
 7c400507-6b30-4a2f-97f9-5baa6c9e4e28
@@ -18,8 +26,6 @@ eastus
 endpoint
 https://eastus.api.cognitive.microsoft.com/
 
-資源識別碼:
-/subscriptions/7c400507-6b30-4a2f-97f9-5baa6c9e4e28/resourceGroups/speech_assessment_1/providers/Microsoft.CognitiveServices/accounts/speechscoring01
 
 api version
 "apiVersion": "2021-04-30"
