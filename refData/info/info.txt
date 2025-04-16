@@ -1,0 +1,156 @@
+
+
+subcribe id:
+7c400507-6b30-4a2f-97f9-5baa6c9e4e28
+
+物件識別碼
+e8f9dda1-ecb9-4983-9832-1cbbb7120d0a
+
+golden-key-1
+02KqGB8EDonpmVbrFYwd5Dm7cGdvR7e3jdUdaVDiRqRYq8kCaaSUJQQJ99BCACYeBjFXJ3w3AAAYACOGE4wU
+
+golden-key-2
+EcmC2LZuRPawifYzH6XIjkq3yz6Jsr0XPHSYDebAO2YfDqmjaA8dJQQJ99BCACYeBjFXJ3w3AAAYACOGDE2q
+
+region
+eastus
+
+endpoint
+https://eastus.api.cognitive.microsoft.com/
+
+資源識別碼:
+/subscriptions/7c400507-6b30-4a2f-97f9-5baa6c9e4e28/resourceGroups/speech_assessment_1/providers/Microsoft.CognitiveServices/accounts/speechscoring01
+
+api version
+"apiVersion": "2021-04-30"
+
+資源群組
+(移動):speech_assessment_1
+
+API Kind: SpeechServices
+
+--------------------------------------------------------------------------------------------------------------------------------------------------
+
+{
+    "id": "/subscriptions/7c400507-6b30-4a2f-97f9-5baa6c9e4e28/resourceGroups/speech_assessment_1/providers/Microsoft.CognitiveServices/accounts/speechscoring01",
+    "name": "speechscoring01",
+    "type": "Microsoft.CognitiveServices/accounts",
+    "etag": "\"0a00397e-0000-0100-0000-67d6de510000\"",
+    "location": "eastus",
+    "sku": {
+        "name": "F0"
+    },
+    "kind": "SpeechServices",
+    "tags": {},
+    "properties": {
+        "endpoint": "https://eastus.api.cognitive.microsoft.com/",
+        "internalId": "1e77ce1bf31642d78cc1e9e9f324a6a1",
+        "dateCreated": "2025-03-16T14:21:04.8209829Z",
+        "callRateLimit": {
+            "rules": [
+                {
+                    "key": "token",
+                    "renewalPeriod": 1,
+                    "count": 50,
+                    "matchPatterns": [
+                        {
+                            "path": "sts/v1.0/*",
+                            "method": "*"
+                        }
+                    ]
+                },
+                {
+                    "key": "speech.aoaivoicesynthesize",
+                    "renewalPeriod": 60,
+                    "count": 0,
+                    "matchPatterns": [
+                        {
+                            "path": "speech/aoaivoicesynthesize",
+                            "method": "*"
+                        }
+                    ]
+                },
+                {
+                    "key": "speech.aoaihdvoicesynthesize",
+                    "renewalPeriod": 60,
+                    "count": 0,
+                    "matchPatterns": [
+                        {
+                            "path": "speech/aoaihdvoicesynthesize",
+                            "method": "*"
+                        }
+                    ]
+                },
+                {
+                    "key": "default",
+                    "renewalPeriod": 10,
+                    "count": 100,
+                    "matchPatterns": [
+                        {
+                            "path": "*",
+                            "method": "*"
+                        }
+                    ]
+                }
+            ]
+        },
+        "isMigrated": false,
+        "networkAcls": {
+            "defaultAction": "Allow",
+            "virtualNetworkRules": [],
+            "ipRules": []
+        },
+        "privateEndpointConnections": [],
+        "publicNetworkAccess": "Enabled",
+        "capabilities": [
+            {
+                "name": "CommitmentPlan"
+            },
+            {
+                "name": "VirtualNetworks"
+            },
+            {
+                "name": "CustomerManagedKey"
+            },
+            {
+                "name": "Container",
+                "value": "SpeechServices.CustomSpeechToText,SpeechServices.NeuralTextToSpeechOnPrem,SpeechServices.DPP,SpeechServices.SpeechToText,SpeechServices.ctsdiarizer,SpeechServices.diarization"
+            }
+        ],
+        "endpoints": {
+            "Speech Services Speech to Text": "https://eastus.api.cognitive.microsoft.com/",
+            "Speech Services Speech to Text v3.2": "https://eastus.api.cognitive.microsoft.com/",
+            "Speech Services Speech to Text 2024-05-15-preview": "https://eastus.api.cognitive.microsoft.com/",
+            "Speech Services Speech to Text 2024-11-15": "https://eastus.api.cognitive.microsoft.com/",
+            "Speech Services Speech to Text v3.2_internal.1": "https://eastus.api.cognitive.microsoft.com/",
+            "Speech Services Custom Voice": "https://eastus.api.cognitive.microsoft.com/",
+            "Speech Services Custom Voice Trial": "https://eastus.api.cognitive.microsoft.com/",
+            "Video Translation": "https://eastus.api.cognitive.microsoft.com/",
+            "Speech Services Audio Content Creation": "https://eastus.api.cognitive.microsoft.com/",
+            "Speech Services Custom Avatar": "https://eastus.api.cognitive.microsoft.com/",
+            "Speech Services Batch Avatar": "https://eastus.api.cognitive.microsoft.com/",
+            "Speech Services Batch Text to Speech": "https://eastus.api.cognitive.microsoft.com/",
+            "Speech Services Speech to Text (Standard)": "https://eastus.stt.speech.microsoft.com",
+            "Speech Services Text to Speech (Neural)": "https://eastus.tts.speech.microsoft.com",
+            "Speech Services Speaker Verification": "https://eastus.api.cognitive.microsoft.com/",
+            "Speech Services Speaker Identification": "https://eastus.api.cognitive.microsoft.com/",
+            "Voice Agent Realtime API": "https://eastus.api.cognitive.microsoft.com/",
+            "Token": "https://eastus.api.cognitive.microsoft.com/"
+        },
+        "provisioningState": "Succeeded"
+    },
+    "identity": {
+        "principalId": "e8f9dda1-ecb9-4983-9832-1cbbb7120d0a",
+        "tenantId": "6249117a-5d83-4791-82a4-7790ee4aee10",
+        "type": "SystemAssigned"
+    },
+    "systemData": {
+        "createdBy": "xrickliao@gmail.com",
+        "createdByType": "User",
+        "createdAt": "2025-03-16T14:21:01.6354545Z",
+        "lastModifiedBy": "xrickliao@gmail.com",
+        "lastModifiedByType": "User",
+        "lastModifiedAt": "2025-03-16T14:21:01.6354545Z"
+    },
+    "apiVersion": "2021-04-30"
+}
