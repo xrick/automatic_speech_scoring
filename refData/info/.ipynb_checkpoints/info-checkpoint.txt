@@ -13,6 +13,22 @@ golden-key-1
 golden-key-2
 EcmC2LZuRPawifYzH6XIjkq3yz6Jsr0XPHSYDebAO2YfDqmjaA8dJQQJ99BCACYeBjFXJ3w3AAAYACOGDE2q
 
+#### About the settings
+The endpoint should look like:
+https://your-resource-name.cognitiveservices.azure.com/
+or for some regions:
+https://your-resource-name.region.cognitiveservices.azure.com/
+
+Make sure you do not use the generic documentation endpoint (https://endpoint.api.cognitive.microsoft.com/).<br>
+Instead, use the endpoint from your Speech resource in Azure.
+
+The speech config can be set using region or endpoint
+speech_config = speechsdk.SpeechConfig(subscription=subscription_key, region="eastus")
+
+the subscription_key is golden-key-1 or golden-key-2
+
+#### End
+
 api version
 "apiVersion": "2021-04-30"
 
