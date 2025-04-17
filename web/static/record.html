@@ -97,7 +97,7 @@
             <!-- 调整后的文本输入框 -->
             <textarea 
                 id="reference-text" 
-                placeholder="請在此輸入參考文本..."
+                placeholder="目前此區無作用..."
                 style="
                     width: 90%;  /* 设置为输入区域的90%宽度 */
                     height: 80px;
@@ -147,7 +147,7 @@
         const recordButton = document.getElementById('record-button');
         const startIcon = document.getElementById('start-icon');
         const recordingIcon = document.getElementById('recording-icon');
-        const referenceTextInput = document.getElementById('reference-text');
+        //const referenceTextInput = document.getElementById('reference-text');
         
         // 添加訊息到顯示區域
         function addMessage(content, type = 'user') {
@@ -227,8 +227,8 @@
                 });
                 const result = await response.json();
                 addMessage(`處理結果：${JSON.stringify(result.message)}`);
-                addMessage(`轉譯的參考文本：${JSON.stringify(result.message)}`)
-                //addMessage(`評估結果：${JSON.stringify(result.assessment, null, 2)}`);
+                addMessage(`轉譯的參考文本：${JSON.stringify(result.ref_txt)}`)
+                addMessage(`評估結果：${JSON.stringify(result.assessment, null, 2)}`);
             } catch (error) {
                 console.error('上傳錯誤:', error);
                 addMessage(`上傳錯誤: ${error.message}`);
