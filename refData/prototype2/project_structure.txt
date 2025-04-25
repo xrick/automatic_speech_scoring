@@ -1,0 +1,11 @@
+
+
+project/
+├── main.py             # FastAPI 應用主程式
+├── templates/          # HTML 範本
+│   ├── conversation.html  # 主題選擇頁面
+│   └── estimate.html      # 對話頁面
+├── static/             # 靜態檔案
+│   ├── css/
+│   └── js/
+└── requirements.txt    # 相依套件

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>對話練習</title>
+    <style>
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        
+        .chat-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+            overflow-y: auto;
+            max-height: 70vh;
+            padding: 10px;
+        }
+        
+        .message {
+            max-width: 80%;
+            margin: 8px 0;
+            padding: 12px 16px;
+            border-radius: 18px;
+            position: relative;
+            clear: both;
+            word-wrap: break-word;
+        }
+        
+        .message.assistant {
+            background-color: #f0f0f0;
+            border-top-left-radius: 4px;
+            align-self: flex-start;
+        }
+        
+        .message.user {
+            background-color: #0084ff;
+            color: white;
+            border-top-right-radius: 4px;
+            align-self: flex-end;
+        }
+        
+        .assistant-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .assistant-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        .assistant-name {
+            font-weight: bold;
+        }
+        
+        .input-container {
+            position: relative;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 80px;
+        }
+        
+        .recording-button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #0056b3;
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        
+        .recording-button i {
+            font-size: 24px;
+            margin-bottom: 4px;
+        }
+        
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        
+        .current-level {
+            font-size: 14px;
+        }
+        
+        .end-button {
+            background-color: transparent;
+            border: 1px solid #999;
+            color: #333;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+        
+        .typing-indicator {
+            display: none;
+            align-self: flex-start;
+            background-color: #f0f0f0;
+            padding: 10px 20px;
+            border-radius: 18px;
+            margin: 8px 0;
+            border-top-left-radius: 4px;
+        }
+        
+        .typing-indicator span {
+            height: 10px;
+            width: 10px;
+            background-color: #999;
+            display: inline-block;
+            border-radius: 50%;
+            animation: typing 1.5s infinite ease-in-out;
+            margin-right: 5px;
+        }
+        
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typing {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="assistant-info">
+        <div class="assistant-avatar">A</div>
+        <div class="assistant-name">Amber</div>
+    </div>
+    
+    <div class="chat-container" id="chat-container">
+        <!-- 訊息將動態添加於此 -->
+    </div>
+    
+    <div class="typing-indicator" id="typing-indicator">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+    
+    <div class="input-container">
+        <button class="recording-button" id="recording-button">
+            <i>🎤</i>
+            錄音
+        </button>
+    </div>
+    
+    <div class="footer">
+        <div class="current-level" id="current-level">目前程度: A1</div>
+        <button class="end-button" id="end-button">End Conversation</button>
+    </div>
+    
+    <script>
+        // 取得 URL 參數或 session 資料
+        let topic = '';
+        let level = 'A1';
+        let segmentation = 'short';
+        
+        // 取得 session 資料
+        async function fetchSessionData() {
+            try {
+                const response = await fetch('/api/session');
+                const data = await response.json();
+                
+                topic = data.topic || topic;
+                level = data.level || level;
+                segmentation = data.segmentation || segmentation;
+                
+                // 更新難度顯示
+                document.getElementById('current-level').textContent = `目前程度: ${level}`;
+            } catch (error) {
+                console.error('Error fetching session data:', error);
+            }
+        }
+        
+        // 聊天功能
+        const chatContainer = document.getElementById('chat-container');
+        const typingIndicator = document.getElementById('typing-indicator');
+        
+        // 添加訊息到聊天
+        function addMessage(content, sender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender === 'Amber' ? 'assistant' : 'user'}`;
+            messageDiv.textContent = content;
+            chatContainer.appendChild(messageDiv);
+            
+            // 捲動到底部
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        // 顯示打字指示器
+        function showTypingIndicator() {
+            typingIndicator.style.display = 'block';
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+        
+        // 隱藏打字指示器
+        function hideTypingIndicator() {
+            typingIndicator.style.display = 'none';
+        }
+        
+        // 開始對話
+        window.addEventListener('DOMContentLoaded', async () => {
+            // 取得 session 資料
+            await fetchSessionData();
+            
+            // 添加初始助手訊息
+            addMessage("Hello! Welcome to our computer store! Are you looking for something special today?", "Amber");
+        });
+        
+        // 處理錄音按鈕
+        const recordingButton = document.getElementById('recording-button');
+        let isRecording = false;
+        
+        recordingButton.addEventListener('click', () => {
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        });
+        
+        // 模擬錄音功能
+        function startRecording() {
+            isRecording = true;
+            recordingButton.style.backgroundColor = '#e74c3c';
+            console.log('開始錄音');
+            
+            // 實際應用中，這裡會初始化 Web Audio API 進行錄音
+        }
+        
+        function stopRecording() {
+            isRecording = false;
+            recordingButton.style.backgroundColor = '#0056b3';
+            console.log('停止錄音');
+            
+            // 模擬用戶輸入（在實際應用中，這裡會處理錄音並發送到服務器）
+            setTimeout(() => {
+                const simulatedUserMessage = "I'm looking for a new graphics card for gaming.";
+                addMessage(simulatedUserMessage, "user");
+                
+                // 顯示打字指示器
+                showTypingIndicator();
+                
+                // 取得 AI 回應
+                fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: simulatedUserMessage,
+                        topic: topic,
+                        level: level
+                    }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    // 延遲隱藏打字指示器（模擬打字）
+                    setTimeout(() => {
+                        hideTypingIndicator();
+                        
+                        // 添加 AI 回應到聊天
+                        addMessage(data.message, data.sender);
+                    }, 1500);
+                })
+                .catch(error => {
+                    hideTypingIndicator();
+                    console.error('Error:', error);
+                    addMessage("I'm sorry, I couldn't process your request. Please try again.", "Amber");
+                });
+            }, 500);
+        }
+        
+        // 處理結束對話按鈕
+        document.getElementById('end-button').addEventListener('click', () => {
+            window.location.href = '/';
+        });
+    </script>
+</body>
+</html>

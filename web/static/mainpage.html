@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>對話情境選擇</title>
+    <style>
+        body {
+            font-family: 'Microsoft JhengHei', Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .header-text {
+            text-align: center;
+            margin: 20px 0;
+            font-size: 18px;
+            font-weight: normal;
+        }
+        
+        .carousel-container {
+            position: relative;
+            margin: 30px 0;
+        }
+        
+        .carousel {
+            display: flex;
+            overflow-x: auto;
+            scroll-behavior: smooth;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+            padding: 10px 0;
+        }
+        
+        .carousel::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .carousel-item {
+            flex: 0 0 auto;
+            padding: 10px 20px;
+            margin: 0 5px;
+            white-space: nowrap;
+            border-radius: 25px;
+            background-color: #f0f0f0;
+            cursor: pointer;
+            font-size: 15px;
+        }
+        
+        .carousel-item.active {
+            background-color: #1e88e5;
+            color: white;
+        }
+        
+        .carousel-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 30px;
+            height: 30px;
+            background-color: #ffffff80;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            cursor: pointer;
+            color: #666;
+            font-weight: bold;
+            z-index: 10;
+        }
+        
+        .carousel-arrow-left {
+            left: 0;
+        }
+        
+        .carousel-arrow-right {
+            right: 0;
+        }
+        
+        .form-group {
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .form-label {
+            flex: 0 0 120px;
+            font-size: 16px;
+        }
+        
+        .form-select {
+            flex-grow: 1;
+            padding: 10px 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            background-color: white;
+        }
+        
+        .scenario-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            resize: vertical;
+            margin: 20px 0;
+            font-family: inherit;
+        }
+        
+        .submit-button {
+            width: 100%;
+            padding: 12px;
+            background-color: #0056b3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h2 class="header-text">請選擇或描述一個你想談論的話題，我們將會進行一次即時對話。</h2>
+    
+    <div class="carousel-container">
+        <div class="carousel-arrow carousel-arrow-left">&#10094;</div>
+        <div class="carousel">
+            <div class="carousel-item">自訂情境</div>
+            <div class="carousel-item active">電腦零件銷售</div>
+            <div class="carousel-item">軟體工程師面試</div>
+            <div class="carousel-item">咖啡廳點餐</div>
+            <div class="carousel-item">機場櫃檯服務</div>
+            <div class="carousel-item">其他情境</div>
+        </div>
+        <div class="carousel-arrow carousel-arrow-right">&#10095;</div>
+    </div>
+    
+    <div class="form-group">
+        <label class="form-label">選擇程度：</label>
+        <select class="form-select">
+            <option selected>A1-初學者 (Beginner)</option>
+            <option>A2-基礎 (Elementary)</option>
+            <option>B1-中級 (Intermediate)</option>
+            <option>B2-中高級 (Upper Intermediate)</option>
+            <option>C1-高級 (Advanced)</option>
+        </select>
+    </div>
+    
+    <div class="form-group">
+        <label class="form-label">自動語言分割：</label>
+        <select class="form-select">
+            <option selected>較短停頓長度</option>
+            <option>中等停頓長度</option>
+            <option>較長停頓長度</option>
+            <option>自動偵測</option>
+        </select>
+    </div>
+    
+    <textarea class="scenario-textarea">In a computer store, the assistant is the seller and the user is the customer. The assistant should try to sell the user the latest RTX 5090 GPU (NT$71,990, DLSS 4, 3352 AI TOPS, 32 GB GDDR7).</textarea>
+    
+    <button class="submit-button">使用此情境</button>
+    
+    <script>
+        // Basic carousel functionality
+        document.querySelector('.carousel-arrow-left').addEventListener('click', () => {
+            document.querySelector('.carousel').scrollBy({ left: -200, behavior: 'smooth' });
+        });
+        
+        document.querySelector('.carousel-arrow-right').addEventListener('click', () => {
+            document.querySelector('.carousel').scrollBy({ left: 200, behavior: 'smooth' });
+        });
+        
+        // Topic selection
+        document.querySelectorAll('.carousel-item').forEach(item => {
+            item.addEventListener('click', () => {
+                document.querySelectorAll('.carousel-item').forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>
