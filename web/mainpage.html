@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI Mockup</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            background-color: #ffffff; /* 頁面背景，圖片看起來是純白 */
+            display: flex;
+            justify-content: center;
+            padding-top: 20px;
+            color: #212529; /* 主要文字顏色 */
+        }
+
+        .container {
+            width: 90%;
+            max-width: 420px; /* 根據圖片比例估算一個合適寬度 */
+            background-color: #fff;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .header-text {
+            font-size: 15px; /* 根據圖片調整 */
+            color: #333;
+            margin-bottom: 25px; /* 調整間距 */
+            text-align: left; /* 圖片中是左對齊 */
+            line-height: 1.6;
+        }
+
+        .topic-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px; /* 調整間距 */
+            gap: 8px; /* 按鈕間的空隙 */
+        }
+
+        .topic-buttons button {
+            background-color: #f0f0f0; /* 淺灰色背景 */
+            border: 1px solid #f0f0f0; /* 邊框與背景同色，或更淺的 #e0e0e0 */
+            color: #333;
+            padding: 8px 12px; /* 調整內邊距 */
+            border-radius: 20px; /* 圓角 */
+            cursor: pointer;
+            font-size: 13px; /* 調整字體大小 */
+            flex-grow: 1;
+            text-align: center;
+            white-space: nowrap; /* 防止文字換行 */
+        }
+         .topic-buttons button:hover {
+            background-color: #e0e0e0;
+        }
+
+
+        .form-group {
+            margin-bottom: 20px; /* 調整間距 */
+            display: flex;
+            align-items: center;
+        }
+
+        .form-group label {
+            margin-right: 10px;
+            font-size: 15px; /* 調整字體大小 */
+            color: #333;
+            white-space: nowrap;
+        }
+
+        .custom-select {
+            position: relative;
+            flex-grow: 1; /* 讓下拉選單填滿剩餘空間 */
+        }
+
+        .select-selected {
+            background-color: #fff;
+            border: 1px solid #ced4da; /* 邊框顏色 */
+            padding: 10px 12px; /* 調整內邊距 */
+            border-radius: 6px; /* 圓角 */
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px; /* 調整字體大小 */
+        }
+        .select-selected:hover {
+            border-color: #a0a0a0;
+        }
+
+        .select-arrow {
+            font-size: 12px;
+            color: #555;
+        }
+
+        .select-items {
+            position: absolute;
+            background-color: white;
+            border: 1px solid #ced4da;
+            /* border-top: none;  cooleng2.jpg 顯示頂部也有邊框，且有陰影 */
+            border-radius: 6px; /* 圓角 */
+            top: calc(100% + 5px); /* 與觸發器間隔一點距離 */
+            left: 0;
+            right: 0;
+            z-index: 99;
+            max-height: 220px; /* 限制最大高度 */
+            overflow-y: auto;
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.1); /* 陰影效果 */
+        }
+
+        .select-items div {
+            padding: 10px 15px; /* 調整內邊距 */
+            cursor: pointer;
+            font-size: 14px; /* 調整字體大小 */
+            border-bottom: 1px solid #eee; /* 分隔線 */
+            color: #333;
+        }
+
+        .select-items div:last-child {
+            border-bottom: none;
+        }
+
+        .select-items div:hover, .select-items div.selected-option-hover { /* for JS hover effect */
+            background-color: #f0f0f0;
+        }
+        
+        .select-items div.active-option { /* for the currently selected item in dropdown */
+             /* color: #0d6efd; /* or some other highlight */
+        }
+
+
+        .select-hide {
+            display: none;
+        }
+
+        .scenario-card {
+            background-color: #f8f9fa; /* 非常淺的灰色 */
+            border: 1px solid #f8f9fa; /* 圖片中似乎無明顯邊框，更像陰影產生的邊界感 */
+            border-radius: 8px; /* 圓角 */
+            padding: 18px; /* 調整內邊距 */
+            margin-top: 30px; /* 與上方元素的間距 */
+            margin-bottom: 20px;
+            font-size: 14px; /* 英文內容字體 */
+            line-height: 1.6;
+            color: #333;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.08); /* 輕微陰影 */
+        }
+
+        .use-scenario-button {
+            background-color: #1a73e8; /* 參考 Google 藍色 */
+            color: white;
+            border: none;
+            padding: 12px 20px; /* 調整內邊距 */
+            border-radius: 25px; /* 高度圓角 */
+            cursor: pointer;
+            font-size: 15px; /* 調整字體大小 */
+            display: block;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: background-color 0.2s;
+        }
+        .use-scenario-button:hover {
+            background-color: #125abc;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <p class="header-text">請選擇或描述一個你想談論的話題，我們將會進行一次即時對話。</p>
+
+        <div class="topic-buttons">
+            <button>咖啡廳點餐</button>
+            <button>機場櫃檯服務</button>
+            <button>技術支援服務</button>
+        </div>
+
+        <div class="form-group">
+            <label for="level-select-trigger">選擇程度：</label>
+            <div class="custom-select" id="level-select-container">
+                <div class="select-selected" id="level-select-trigger" tabindex="0">
+                    <span>A1 - 初學者 (Beginner)</span>
+                    <span class="select-arrow">▼</span>
+                </div>
+                <div class="select-items select-hide" id="level-items">
+                    <div tabindex="0" data-value="A1">✓ A1 - 初學者 (Beginner)</div>
+                    <div tabindex="0" data-value="A2">A2 - 基礎 (Elementary)</div>
+                    <div tabindex="0" data-value="B1">B1 - 中級 (Intermediate)</div>
+                    <div tabindex="0" data-value="B2">B2 - 中高級 (Upper Intermediate)</div>
+                    <div tabindex="0" data-value="C1">C1 - 高級 (Advanced)</div>
+                    <div tabindex="0" data-value="C2">C2 - 精通 (Proficient)</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="segmentation-select-trigger">自動語音分割：</label>
+            <div class="custom-select" id="segmentation-select-container">
+                <div class="select-selected" id="segmentation-select-trigger" tabindex="0">
+                    <span>較短停頓長度</span>
+                    <span class="select-arrow">▼</span>
+                </div>
+                <div class="select-items select-hide" id="segmentation-items">
+                    <div tabindex="0" data-value="short">✓ 較短停頓長度</div>
+                    <div tabindex="0" data-value="medium">一般停頓長度</div>
+                    <div tabindex="0" data-value="long">較長停頓長度</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="scenario-card">
+            <p>In a computer store, the assistant is the seller and the user is the customer. The assistant should try to sell the user the latest RTX 5090 GPU (NT$71,990, DLSS 4, 3352 AI TOPS, 32 GB GDDR7).</p>
+        </div>
+
+        <button class="use-scenario-button">使用此情境</button>
+    </div>
+
+    <script>
+        function initializeCustomSelect(containerId, triggerId, itemsId) {
+            const container = document.getElementById(containerId);
+            const trigger = document.getElementById(triggerId);
+            const itemsContainer = document.getElementById(itemsId);
+            
+            if (!container || !trigger || !itemsContainer) {
+                console.error('Select elements not found for:', containerId);
+                return;
+            }
+
+            const options = itemsContainer.querySelectorAll('div[data-value]');
+            const selectedTextSpan = trigger.querySelector('span:first-child');
+            const arrowSpan = trigger.querySelector('.select-arrow');
+
+            // Function to open/close dropdown
+            function toggleDropdown() {
+                const isHidden = itemsContainer.classList.contains('select-hide');
+                closeAllSelects(itemsContainer); // Close others first
+                if (isHidden) {
+                    itemsContainer.classList.remove('select-hide');
+                    arrowSpan.textContent = '▲';
+                    // Focus the first or selected item in the dropdown
+                    const currentActive = itemsContainer.querySelector('.active-option') || itemsContainer.querySelector('div[data-value]');
+                    if(currentActive) currentActive.focus();
+                } else {
+                    itemsContainer.classList.add('select-hide');
+                    arrowSpan.textContent = '▼';
+                }
+            }
+            
+            trigger.addEventListener('click', function(event) {
+                event.stopPropagation();
+                toggleDropdown();
+            });
+
+            trigger.addEventListener('keydown', function(event) {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    toggleDropdown();
+                }
+            });
+
+            options.forEach(option => {
+                option.addEventListener('click', function() {
+                    selectOption(option);
+                });
+                option.addEventListener('keydown', function(event) {
+                    if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        selectOption(option);
+                    }
+                });
+
+                // Visual hover for keyboard navigation
+                option.addEventListener('focus', () => option.classList.add('selected-option-hover'));
+                option.addEventListener('blur', () => option.classList.remove('selected-option-hover'));
+            });
+
+            function selectOption(option) {
+                selectedTextSpan.textContent = option.textContent.replace('✓ ', '').trim();
+                
+                options.forEach(opt => {
+                    opt.textContent = opt.textContent.replace('✓ ', '').trim();
+                    opt.classList.remove('active-option');
+                });
+                option.textContent = '✓ ' + option.textContent.trim();
+                option.classList.add('active-option');
+
+                itemsContainer.classList.add('select-hide');
+                arrowSpan.textContent = '▼';
+                trigger.focus(); // Return focus to the trigger
+            }
+        }
+
+        function closeAllSelects(exceptThisOneItemsContainer) {
+            const allSelectItems = document.querySelectorAll('.select-items');
+            allSelectItems.forEach(items => {
+                if (items !== exceptThisOneItemsContainer && !items.classList.contains('select-hide')) {
+                    items.classList.add('select-hide');
+                    const correspondingTrigger = items.previousElementSibling; // Assuming trigger is direct sibling
+                    if(correspondingTrigger && correspondingTrigger.classList.contains('select-selected')){
+                         const arrow = correspondingTrigger.querySelector('.select-arrow');
+                         if (arrow) arrow.textContent = '▼';
+                    }
+                }
+            });
+        }
+
+        document.addEventListener('click', function(event) {
+            // Close if click is outside any custom select
+            if (!event.target.closest('.custom-select')) {
+                 closeAllSelects(null);
+            }
+        });
+        
+        document.addEventListener('keydown', function(event) {
+            if (event.key === "Escape") {
+                closeAllSelects(null);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCustomSelect('level-select-container', 'level-select-trigger', 'level-items');
+            initializeCustomSelect('segmentation-select-container', 'segmentation-select-trigger', 'segmentation-items');
+            
+            // Set initial active state based on HTML (already has '✓')
+            document.querySelectorAll('.select-items div').forEach(opt => {
+                if (opt.textContent.startsWith('✓')) {
+                    opt.classList.add('active-option');
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>
