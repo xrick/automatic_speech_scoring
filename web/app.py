@@ -94,7 +94,7 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
-    return RedirectResponse(url="/static/record.html")
+    return RedirectResponse(url="/static/mainpage2.html")
 
 def perform_pronunciation_assessment(audio_file: str, reference_text: str) -> dict:
     """執行發音評估"""
@@ -163,8 +163,12 @@ def gen_refence_text(audio_file:str=None):
     
 
 @app.post("/upload-audio")
-# async def upload_audio(audio: UploadFile = File(...), reference_text: str = Form(...)):
-async def upload_audio(audio: UploadFile = File(...)):
+async def upload_audio(
+    audio: UploadFile = File(...),
+    topic: str = Form(None),
+    level: str = Form(None),
+    segmentation: str = Form(None)
+):
     # try:
     # 生成時間戳記
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -200,6 +204,9 @@ async def upload_audio(audio: UploadFile = File(...)):
             "webm_file": webm_filename,
             "wav_file": wav_filename,
             "ref_txt": reference_text,
+            "topic": topic,
+            "level": level,
+            "segmentation": segmentation,
             "assessment": assessment_result
         },
         status_code=200

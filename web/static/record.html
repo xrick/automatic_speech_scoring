@@ -138,16 +138,16 @@
             <!-- 调整后的文本输入框 -->
             <textarea 
                 id="reference-text" 
-                placeholder="目前此區無作用..."
+                placeholder="Scenario text will appear here..."
                 style="
-                    width: 90%;  /* 设置为输入区域的90%宽度 */
+                    width: 90%;
                     height: 50px;
                     padding: 10px;
                     border: 1px solid #e0e0e0;
                     border-radius: 8px;
                     resize: vertical;
                     font-family: 'Microsoft JhengHei', sans-serif;
-                    margin-bottom: 15px;  /* 增加与按钮间距 */
+                    margin-bottom: 15px;
                     transition: all 0.3s ease;
                 "
             ></textarea>
@@ -287,6 +287,26 @@
             }
         }
         recordButton.addEventListener('click', toggleRecording);
+
+        // Add this at the beginning of your existing script
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get data from localStorage
+            const scenarioText = localStorage.getItem('scenarioText');
+            const selectedTopic = localStorage.getItem('selectedTopic');
+            const selectedLevel = localStorage.getItem('selectedLevel');
+            const selectedSegmentation = localStorage.getItem('selectedSegmentation');
+            
+            // Display scenario text
+            if (scenarioText) {
+                document.getElementById('reference-text').value = scenarioText;
+            }
+            
+            // Clear localStorage after retrieving data
+            localStorage.removeItem('scenarioText');
+            localStorage.removeItem('selectedTopic');
+            localStorage.removeItem('selectedLevel');
+            localStorage.removeItem('selectedSegmentation');
+        });
     </script>
     <style>
         /* 新增响应式设计 */
