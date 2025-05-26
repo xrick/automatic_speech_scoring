@@ -58,7 +58,7 @@ async def lifespan(app: FastAPI):
         logging.info(f"初始化whisper model:{WHISPER_MODEL}....")
         # whisper_model = WhisperModel(WHISPER_MODEL, device="cpu", compute_type="int8", 
         #                             download_root=WHISPER_MODEL_PATH, local_files_only=True); #home
-        whisper_model = WhisperModel(WHISPER_MODEL, device="cpu", compute_type="int8", local_files_only=False) #office
+        WhisperModel(WHISPER_MODEL, device="cpu", compute_type="int8", local_files_only=False) #office
         
         logging.info(f"初始化whisper model:{WHISPER_MODEL}完成....")
         
@@ -95,7 +95,7 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
-    return RedirectResponse(url="/static/mainpage2.html")
+    return RedirectResponse(url="/static/record.html")
 
 def perform_pronunciation_assessment(audio_file: str, reference_text: str) -> dict:
     """執行發音評估"""
@@ -164,12 +164,8 @@ def gen_refence_text(audio_file:str=None):
     
 
 @app.post("/upload-audio")
-async def upload_audio(
-    audio: UploadFile = File(...),
-    topic: str = Form(None),
-    level: str = Form(None),
-    segmentation: str = Form(None)
-):
+# async def upload_audio(audio: UploadFile = File(...), reference_text: str = Form(...)):
+async def upload_audio(audio: UploadFile = File(...)):
     # try:
     # 生成時間戳記
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -205,9 +201,6 @@ async def upload_audio(
             "webm_file": webm_filename,
             "wav_file": wav_filename,
             "ref_txt": reference_text,
-            "topic": topic,
-            "level": level,
-            "segmentation": segmentation,
             "assessment": assessment_result
         },
         status_code=200
