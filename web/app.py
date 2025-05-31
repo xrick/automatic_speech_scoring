@@ -67,9 +67,10 @@ async def lifespan(app: FastAPI):
     try:
         # Load the whisper and llm models
         logging.info(f"初始化whisper model:{WHISPER_MODEL}....")
-        whisper_model = WhisperModel(WHISPER_MODEL, device="cpu", compute_type="int8", 
-                                    download_root=WHISPER_MODEL_PATH, local_files_only=True); #home
+        # whisper_model = WhisperModel(WHISPER_MODEL, device="cpu", compute_type="int8", 
+        #                             download_root=WHISPER_MODEL_PATH, local_files_only=True); #home
         # whisper_model = WhisperModel(WHISPER_MODEL, device="cpu", compute_type="int8", local_files_only=False) #office
+        whisper_model = WhisperModel(WHISPER_MODEL, device="cpu", cpu_threads=8, compute_type="int8", local_files_only=False);
         
         logging.info(f"初始化whisper model:{WHISPER_MODEL}完成....")
         
