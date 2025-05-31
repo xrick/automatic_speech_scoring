@@ -210,8 +210,26 @@
         let mediaRecorder;
         let audioChunks = [];
         let isRecording = false;
-        let chatType = 1;
+        let uploadInterval;
+        let silenceTimer = null;
+        let fallbackTimer = null;
+        let lastAudioLevel = 0;
+        let recordingStream = null; // Add this to track the stream
+        const SILENCE_THRESHOLD = 0.03; // Increased threshold to filter out more noise
+        const SILENCE_DURATION = 3000; // Increased to 3 seconds for complete sentences
+        const FALLBACK_INTERVAL = 10000; // Increased to 10 seconds for longer responses
+        const MIN_SPEECH_DURATION = 1000; // Minimum 1 second of speech before processing
+        let speechStartTime = null;
+        let consecutiveSilenceCount = 0;
+        const CONSECUTIVE_SILENCE_REQUIRED = 3; // Require multiple silence detections
         
+        // Add safeguards for restart mechanism
+        let restartCount = 0;
+        const MAX_RESTARTS = 15; // Increased from 5 to 15 for better user experience
+        const MAX_CHUNKS_PER_SESSION = 30; // Increased from 20 to 30 per user request
+        let lastProcessTime = 0;
+        const MIN_PROCESS_INTERVAL = 1000; // Reduced from 2000 to 1000ms for more responsive processing
+
         const messageArea = document.getElementById('message-area');
         const recordButton = document.getElementById('record-button');
         const startIcon = document.getElementById('start-icon');
@@ -246,131 +264,554 @@
             }
         }
         
+        // Function to calculate audio level
+        function calculateAudioLevel(audioData) {
+            // Use RMS (Root Mean Square) for better noise filtering
+            let sumOfSquares = 0;
+            for (let i = 0; i < audioData.length; i++) {
+                sumOfSquares += audioData[i] * audioData[i];
+            }
+            const rms = Math.sqrt(sumOfSquares / audioData.length);
+            
+            // Apply smoothing to reduce sensitivity to brief spikes
+            lastAudioLevel = lastAudioLevel * 0.7 + rms * 0.3;
+            return lastAudioLevel;
+        }
+
+        // Function to handle silence detection
+        function handleSilenceDetection(audioContext, stream) {
+            const analyser = audioContext.createAnalyser();
+            const microphone = audioContext.createMediaStreamSource(stream);
+            microphone.connect(analyser);
+            analyser.fftSize = 2048;
+            analyser.smoothingTimeConstant = 0.8; // Increased smoothing for noise reduction
+            
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Float32Array(bufferLength);
+            
+            function checkAudioLevel() {
+                if (!isRecording) return;
+                
+                analyser.getFloatTimeDomainData(dataArray);
+                const audioLevel = calculateAudioLevel(dataArray);
+                
+                // Determine if this is speech or noise
+                const isSpeech = audioLevel > SILENCE_THRESHOLD;
+                
+                // Visual feedback - different colors for speech vs silence vs noise
+                if (isSpeech) {
+                    recordButton.style.backgroundColor = '#4caf50'; // Green when clear speech detected
+                    if (!speechStartTime) {
+                        speechStartTime = Date.now();
+                        console.log('Speech started at:', speechStartTime);
+                    }
+                    consecutiveSilenceCount = 0; // Reset silence counter
+                } else {
+                    recordButton.style.backgroundColor = '#ff4444'; // Red when silent
+                    consecutiveSilenceCount++;
+                }
+                
+                // Debug logging with less frequency but more info
+                if (Math.random() < 0.05) { // Log only 5% of the time
+                    console.log('Audio level:', audioLevel.toFixed(4), 
+                              'Threshold:', SILENCE_THRESHOLD, 
+                              'Speech:', isSpeech,
+                              'Silence count:', consecutiveSilenceCount,
+                              'Speech duration:', speechStartTime ? Date.now() - speechStartTime : 0);
+                }
+                
+                // Handle silence detection with consecutive requirement
+                if (!isSpeech && consecutiveSilenceCount >= CONSECUTIVE_SILENCE_REQUIRED) {
+                    if (!silenceTimer && speechStartTime) {
+                        const speechDuration = Date.now() - speechStartTime;
+                        if (speechDuration >= MIN_SPEECH_DURATION) {
+                            console.log('Sufficient silence detected after', speechDuration, 'ms of speech, starting timer...');
+                            silenceTimer = setTimeout(() => {
+                                if (isRecording && audioChunks.length > 0) {
+                                    console.log('Processing speech segment - Duration:', speechDuration, 'ms, Chunks:', audioChunks.length);
+                                    processCompleteRecording();
+                                    speechStartTime = null; // Reset speech timer
+                                }
+                                silenceTimer = null;
+                                consecutiveSilenceCount = 0;
+                            }, SILENCE_DURATION);
+                        } else {
+                            console.log('Speech too short (', speechDuration, 'ms), ignoring...');
+                            speechStartTime = null;
+                            consecutiveSilenceCount = 0;
+                        }
+                    }
+                } else if (isSpeech) {
+                    if (silenceTimer) {
+                        console.log('Speech resumed, cancelling silence timer. Audio level:', audioLevel.toFixed(4));
+                        clearTimeout(silenceTimer);
+                        silenceTimer = null;
+                        consecutiveSilenceCount = 0;
+                    }
+                }
+                
+                requestAnimationFrame(checkAudioLevel);
+            }
+            
+            checkAudioLevel();
+        }
+
         // 開始錄音
         async function startRecording() {
             try {
-                // Debug information
-                console.log('Checking mediaDevices support...');
-                console.log('navigator.mediaDevices:', navigator.mediaDevices);
+                console.log('Starting recording...');
                 
-                // Check if browser supports getUserMedia
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    throw new Error('您的瀏覽器不支援錄音功能。請使用 Chrome、Firefox、Safari 或 Edge 的最新版本。');
-                }
-
-                // First check if we have permission
-                try {
-                    const devices = await navigator.mediaDevices.enumerateDevices();
-                    const audioDevices = devices.filter(device => device.kind === 'audioinput');
-                    console.log('Available audio devices:', audioDevices);
-                    
-                    if (audioDevices.length === 0) {
-                        throw new Error('找不到麥克風設備。');
-                    }
-                } catch (deviceError) {
-                    console.error('Error enumerating devices:', deviceError);
-                    throw new Error('無法訪問麥克風設備。請確保已授予麥克風權限。');
-                }
-
-                // Request microphone access with explicit constraints
-                console.log('Requesting microphone access...');
+                // Reset restart count for new recording session
+                restartCount = 0;
+                lastProcessTime = 0;
+                speechStartTime = null;
+                consecutiveSilenceCount = 0;
+                lastAudioLevel = 0;
+                
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     audio: {
+                        channelCount: 1,
+                        sampleRate: 16000,
+                        sampleSize: 16,
+                        volume: 1.0,
                         echoCancellation: true,
                         noiseSuppression: true,
-                        autoGainControl: true,
-                        sampleRate: 44100,
-                        channelCount: 1
-                    }
+                        autoGainControl: true
+                    } 
                 });
                 
-                console.log('Microphone access granted:', stream);
+                recordingStream = stream; // Store the stream reference
+                console.log('Got media stream');
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 
-                mediaRecorder = new MediaRecorder(stream);
+                // Resume audio context if it's suspended
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+                
+                handleSilenceDetection(audioContext, stream);
+                
+                // Check supported MIME types with fallback options
+                const mimeTypes = [
+                    'audio/webm;codecs=opus',
+                    'audio/webm;codecs=vp8,opus',
+                    'audio/webm',
+                    'audio/mp4;codecs=mp4a.40.2',
+                    'audio/mp4',
+                    'audio/mpeg',
+                    'audio/wav'
+                ];
+                
+                let selectedMimeType = '';
+                let selectedOptions = {};
+                
+                console.log('Checking supported MIME types...');
+                for (const mimeType of mimeTypes) {
+                    const supported = MediaRecorder.isTypeSupported(mimeType);
+                    console.log(`${mimeType}: ${supported ? 'SUPPORTED' : 'not supported'}`);
+                    if (supported && !selectedMimeType) {
+                        selectedMimeType = mimeType;
+                        console.log('Selected MIME type:', selectedMimeType);
+                    }
+                }
+                
+                if (selectedMimeType) {
+                    selectedOptions = {
+                        mimeType: selectedMimeType,
+                        audioBitsPerSecond: 128000
+                    };
+                } else {
+                    console.warn('No supported MIME type found, using default');
+                    selectedOptions = {
+                        audioBitsPerSecond: 128000
+                    };
+                }
+                
+                console.log('MediaRecorder options:', selectedOptions);
+                
+                try {
+                    mediaRecorder = new MediaRecorder(stream, selectedOptions);
+                    console.log('MediaRecorder created successfully with options');
+                } catch (recordeError) {
+                    console.warn('Failed to create MediaRecorder with options, trying with default:', recordeError);
+                    try {
+                        mediaRecorder = new MediaRecorder(stream);
+                        console.log('MediaRecorder created with default options');
+                    } catch (defaultError) {
+                        console.error('Failed to create MediaRecorder even with default options:', defaultError);
+                        throw defaultError;
+                    }
+                }
+                
+                // Reset audioChunks for new recording
+                audioChunks = [];
                 
                 mediaRecorder.ondataavailable = (event) => {
-                    audioChunks.push(event.data);
+                    console.log('Data available, size:', event.data.size, 'type:', event.data.type);
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                        console.log('Total chunks collected:', audioChunks.length);
+                    }
                 };
-                
-                mediaRecorder.onstop = sendAudioData;
-                
-                audioChunks = [];
-                mediaRecorder.start();
+
+                mediaRecorder.onerror = (event) => {
+                    console.error('MediaRecorder error:', event.error);
+                    addMessage(`❌ Recording error: ${event.error}`);
+                };
+
+                mediaRecorder.onstart = () => {
+                    console.log('MediaRecorder started with MIME type:', mediaRecorder.mimeType);
+                };
+
+                mediaRecorder.onstop = () => {
+                    console.log('MediaRecorder stopped, processing final recording...');
+                    if (audioChunks.length > 0) {
+                        processCompleteRecording();
+                    }
+                };
+
+                // Start recording with 1 second timeslice to generate data chunks
+                mediaRecorder.start(1000);
                 isRecording = true;
-                
                 recordButton.classList.add('recording');
                 startIcon.style.display = 'none';
                 recordingIcon.style.display = 'block';
                 
-                addMessage('開始錄音...');
-            } catch (error) {
-                console.error('錄音錯誤:', error);
-                let errorMessage = '錄音錯誤: ';
+                // Add fallback timer to ensure chunks are processed even without silence detection
+                fallbackTimer = setInterval(() => {
+                    if (isRecording && audioChunks.length > 0) {
+                        console.log('Fallback timer triggered - processing recording');
+                        processCompleteRecording();
+                    }
+                }, FALLBACK_INTERVAL);
                 
-                if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-                    errorMessage += '請允許瀏覽器使用麥克風。請點擊網址列左側的鎖頭圖示，並確保麥克風權限已開啟。';
-                } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
-                    errorMessage += '找不到麥克風設備。請確認您的電腦已連接麥克風。';
-                } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
-                    errorMessage += '麥克風可能被其他應用程式使用中。請關閉其他可能使用麥克風的應用程式。';
-                } else if (error.name === 'OverconstrainedError') {
-                    errorMessage += '麥克風不支援要求的設定。';
-                } else if (error.name === 'TypeError' || error.name === 'TypeError') {
-                    errorMessage += '您的瀏覽器不支援錄音功能。請使用 Chrome、Firefox、Safari 或 Edge 的最新版本。';
-                } else {
-                    errorMessage += error.message;
-                }
-                
-                addMessage(errorMessage);
-                
-                // Reset recording state
-                isRecording = false;
-                recordButton.classList.remove('recording');
-                startIcon.style.display = 'block';
-                recordingIcon.style.display = 'none';
+                addMessage('🎤 Recording started... Speak clearly and pause for 3 seconds after completing your sentence. The button will be GREEN when speech is detected, RED when silent. Minimum 1 second of speech required.');
+
+            } catch (err) {
+                console.error('Error accessing microphone:', err);
+                addMessage(`❌ Error accessing microphone: ${err.message}`);
             }
         }
         
         // 停止錄音
         function stopRecording() {
-            mediaRecorder.stop();
-            mediaRecorder.stream.getTracks().forEach(track => track.stop());
-            isRecording = false;
-            
-            recordButton.classList.remove('recording');
-            startIcon.style.display = 'block';
-            recordingIcon.style.display = 'none';
-            
-            addMessage('錄音結束，正在處理...');
+            if (mediaRecorder && isRecording) {
+                console.log('Stopping recording...');
+                
+                // Clear all timers first
+                if (silenceTimer) {
+                    clearTimeout(silenceTimer);
+                    silenceTimer = null;
+                }
+                if (fallbackTimer) {
+                    clearInterval(fallbackTimer);
+                    fallbackTimer = null;
+                }
+                
+                isRecording = false;
+                recordButton.classList.remove('recording');
+                recordButton.style.backgroundColor = ''; // Reset button color
+                startIcon.style.display = 'block';
+                recordingIcon.style.display = 'none';
+                
+                // Stop the media recorder - this will trigger onstop event
+                mediaRecorder.stop();
+                
+                // Stop all tracks in the stream
+                if (recordingStream) {
+                    recordingStream.getTracks().forEach(track => track.stop());
+                    recordingStream = null;
+                }
+                
+                // Reset all state variables
+                speechStartTime = null;
+                consecutiveSilenceCount = 0;
+                lastAudioLevel = 0;
+                restartCount = 0;
+                lastProcessTime = 0;
+                
+                addMessage('🛑 Recording stopped.');
+            }
         }
         
+        // Process a complete recording segment and restart recording
+        async function processCompleteRecording() {
+            const currentTime = Date.now();
+            
+            // Check if we're processing too frequently - but allow bypass for important chunks
+            if (currentTime - lastProcessTime < MIN_PROCESS_INTERVAL && audioChunks.length < 5) {
+                console.log('Processing too frequently with few chunks, skipping...');
+                return;
+            }
+            
+            if (audioChunks.length === 0) {
+                console.log('No audio chunks to process');
+                return;
+            }
+            
+            // Limit chunks to prevent memory issues
+            if (audioChunks.length > MAX_CHUNKS_PER_SESSION) {
+                console.warn('Too many chunks accumulated (', audioChunks.length, '), limiting to', MAX_CHUNKS_PER_SESSION);
+                audioChunks = audioChunks.slice(0, MAX_CHUNKS_PER_SESSION);
+            }
+
+            console.log('Processing complete recording with', audioChunks.length, 'chunks');
+            lastProcessTime = currentTime;
+            
+            // Create a copy of current chunks and clear the array for next recording
+            const recordingChunks = [...audioChunks];
+            audioChunks = [];
+            
+            // Stop current recording
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+            }
+            
+            // Process the recording
+            const success = await uploadCompleteRecording(recordingChunks);
+            
+            // Auto-reset restart count if we've reached the limit to ensure continuous operation
+            if (restartCount >= MAX_RESTARTS) {
+                console.log('Reached restart limit, auto-resetting for continuous operation...');
+                restartCount = 0;
+                addMessage('🔄 Recording session auto-reset for continuous operation.');
+            }
+            
+            // Always restart if processing was successful and we're still recording
+            if (success && isRecording && recordingStream) {
+                setTimeout(() => {
+                    restartRecording();
+                }, 500);
+            } else if (!success) {
+                console.warn('Upload failed, will retry on next speech segment');
+                // Don't stop recording, just continue listening for next speech
+                if (isRecording && recordingStream) {
+                    setTimeout(() => {
+                        restartRecording();
+                    }, 1000); // Longer delay on failure
+                }
+            }
+        }
         
-        // 發送音頻數據到後端
-        async function sendAudioData() {
-            //const referenceText = referenceTextInput.value.trim();
-            //if (!referenceText) {
-                //addMessage('錯誤：請輸入參考文本');
-                //addMessage('手動加入參考文本(目前未需要)');
-                //return;
-           // }
-            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-            const formData = new FormData();
-            formData.append('audio', audioBlob, 'recording.webm');
-            //formData.append('reference_text', referenceText);  // 添加参考文本
+        // Restart recording with the existing stream
+        function restartRecording() {
+            if (!isRecording || !recordingStream) {
+                console.log('Cannot restart: not recording or no stream');
+                return;
+            }
+            
+            restartCount++;
+            console.log('Restarting recording... (attempt', restartCount, ')');
+            
             try {
-                const response = await fetch('/upload-audio', {
+                // Create new MediaRecorder with same settings
+                const mimeType = mediaRecorder ? mediaRecorder.mimeType : 'audio/webm;codecs=opus';
+                const options = {
+                    mimeType: mimeType,
+                    audioBitsPerSecond: 128000
+                };
+                
+                try {
+                    mediaRecorder = new MediaRecorder(recordingStream, options);
+                } catch (e) {
+                    console.warn('Failed to create MediaRecorder with options, using default');
+                    mediaRecorder = new MediaRecorder(recordingStream);
+                }
+                
+                // Reset chunks array and speech detection variables
+                audioChunks = [];
+                speechStartTime = null;
+                consecutiveSilenceCount = 0;
+                lastAudioLevel = 0;
+                
+                // Set up event handlers
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                        // Log less frequently to reduce console spam
+                        if (audioChunks.length % 15 === 0) {
+                            console.log('Chunks collected:', audioChunks.length);
+                        }
+                    }
+                };
+                
+                mediaRecorder.onstop = () => {
+                    if (audioChunks.length > 0 && isRecording) {
+                        processCompleteRecording();
+                    }
+                };
+                
+                mediaRecorder.onerror = (event) => {
+                    console.error('MediaRecorder error during restart:', event.error);
+                    addMessage(`❌ Recording error: ${event.error}. Attempting to continue...`);
+                    // Try to restart once more instead of stopping completely
+                    if (restartCount < MAX_RESTARTS) {
+                        setTimeout(() => {
+                            restartRecording();
+                        }, 2000);
+                    }
+                };
+                
+                // Start new recording with same timeslice
+                mediaRecorder.start(1000);
+                console.log('Recording restarted successfully');
+                
+            } catch (error) {
+                console.error('Error restarting recording:', error);
+                addMessage('❌ Error restarting recording. Attempting to continue...');
+                // Try to restart once more instead of stopping completely
+                if (restartCount < MAX_RESTARTS) {
+                    setTimeout(() => {
+                        restartRecording();
+                    }, 2000);
+                }
+            }
+        }
+        
+        async function uploadCompleteRecording(recordingChunks) {
+            if (recordingChunks.length === 0) {
+                console.log('No recording chunks to upload');
+                return false;
+            }
+
+            console.log('Uploading complete recording with', recordingChunks.length, 'chunks');
+            
+            // Determine the best MIME type for the blob based on what was recorded
+            let blobMimeType = 'audio/webm;codecs=opus';
+            let fileExtension = 'webm';
+            
+            if (mediaRecorder && mediaRecorder.mimeType) {
+                blobMimeType = mediaRecorder.mimeType;
+                console.log('Using recorded MIME type:', blobMimeType);
+                
+                // Determine file extension based on MIME type
+                if (blobMimeType.includes('webm')) {
+                    fileExtension = 'webm';
+                } else if (blobMimeType.includes('mp4')) {
+                    fileExtension = 'mp4';
+                } else if (blobMimeType.includes('wav')) {
+                    fileExtension = 'wav';
+                } else if (blobMimeType.includes('mpeg')) {
+                    fileExtension = 'mp3';
+                }
+            }
+
+            const audioBlob = new Blob(recordingChunks, { 
+                type: blobMimeType
+            });
+
+            console.log('Audio blob details:');
+            console.log('- Size:', audioBlob.size, 'bytes');
+            console.log('- Type:', audioBlob.type);
+            console.log('- Extension:', fileExtension);
+            console.log('- Chunks count:', recordingChunks.length);
+
+            // Verify blob has content
+            if (audioBlob.size === 0) {
+                console.warn('Empty audio blob, skipping upload');
+                return false;
+            }
+            
+            if (audioBlob.size < 1000) { // Increase minimum size threshold
+                console.warn('Very small audio blob, might be too short for meaningful content');
+                // Still try to process it
+            }
+
+            const formData = new FormData();
+            const filename = `recording_${Date.now()}.${fileExtension}`;
+            formData.append('audio', audioBlob, filename);
+            
+            console.log('Uploading file:', filename);
+
+            try {
+                console.log('Sending request to /transcribe-chunk');
+                const response = await fetch('/transcribe-chunk', {
                     method: 'POST',
                     body: formData
                 });
-                const result = await response.json();
-                addMessage(`處理結果：${JSON.stringify(result.message)}`);
-                addMessage(`轉譯的參考文本：${JSON.stringify(result.ref_txt)}`)
-                addMessage(`評估結果：${JSON.stringify(result.assessment, null, 2)}`);
+
+                console.log('Response status:', response.status);
+                
+                const data = await response.json();
+                console.log('Response data:', data);
+                
+                // Check if server returned completely empty response
+                const hasTranscription = data.transcription && data.transcription.trim();
+                const hasChatResponse = data.chat_response && data.chat_response.trim();
+                const hasError = data.error && data.error.trim();
+                
+                if (!hasTranscription && !hasChatResponse && !hasError) {
+                    console.warn('Server returned completely empty response - this might indicate a processing issue');
+                    addMessage('⚠️ No response from server. The audio might be too quiet or unclear. Please try speaking louder and clearer.');
+                    return false; // Return false to prevent restart loop
+                }
+                
+                // Handle response even if there's an error
+                if (hasError) {
+                    console.error('Server error:', data.error);
+                    // Only show error in UI if it's not a processing error that we can retry
+                    if (!data.error.includes('audio file format') && !data.error.includes('conversion')) {
+                        addMessage(`⚠️ ${data.error}`);
+                    }
+                    
+                    // Still show any partial results
+                    if (hasTranscription) {
+                        const userMessage = document.createElement('div');
+                        userMessage.className = 'message user-message';
+                        userMessage.style.backgroundColor = '#fff3cd';
+                        userMessage.style.borderLeft = '4px solid #ffc107';
+                        userMessage.innerHTML = `<strong>You (partial):</strong> ${data.transcription}`;
+                        messageArea.appendChild(userMessage);
+                    }
+                    
+                    if (hasChatResponse) {
+                        const botMessage = document.createElement('div');
+                        botMessage.className = 'message bot-message';
+                        botMessage.style.backgroundColor = '#f8d7da';
+                        botMessage.style.borderLeft = '4px solid #dc3545';
+                        botMessage.innerHTML = `<strong>Bot:</strong> ${data.chat_response}`;
+                        messageArea.appendChild(botMessage);
+                    }
+                    
+                    return false; // Return false for errors to prevent restart
+                } else {
+                    // Normal successful response
+                    if (hasTranscription) {
+                        const userMessage = document.createElement('div');
+                        userMessage.className = 'message user-message';
+                        userMessage.style.backgroundColor = '#e3f2fd';
+                        userMessage.style.borderLeft = '4px solid #2196f3';
+                        userMessage.innerHTML = `<strong>You:</strong> ${data.transcription}`;
+                        messageArea.appendChild(userMessage);
+                    }
+
+                    if (hasChatResponse) {
+                        const botMessage = document.createElement('div');
+                        botMessage.className = 'message bot-message';
+                        botMessage.style.backgroundColor = '#f3e5f5';
+                        botMessage.style.borderLeft = '4px solid #9c27b0';
+                        botMessage.innerHTML = `<strong>Bot:</strong> ${data.chat_response}`;
+                        messageArea.appendChild(botMessage);
+                    }
+                }
+
+                // Scroll to bottom
+                messageArea.scrollTop = messageArea.scrollHeight;
+                
+                return true; // Return true for successful processing
+                
             } catch (error) {
-                console.error('上傳錯誤:', error);
-                addMessage(`上傳錯誤: ${error.message}`);
+                console.error('Error uploading complete recording:', error);
+                addMessage(`❌ Upload error: ${error.message}. Please try again.`);
+                return false; // Return false for network errors
             }
         }
+        
+        // Keep the old function name for compatibility but redirect to new function
+        async function uploadAudioChunk() {
+            return uploadCompleteRecording(audioChunks);
+        }
+
         recordButton.addEventListener('click', toggleRecording);
 
         // Add this at the beginning of your existing script
@@ -392,6 +833,45 @@
             localStorage.removeItem('selectedLevel');
             localStorage.removeItem('selectedSegmentation');
         });
+
+        // Manual reset function for when things go wrong
+        function resetRecordingSession() {
+            console.log('Manually resetting recording session...');
+            
+            // Stop current recording completely
+            if (isRecording) {
+                stopRecording();
+            }
+            
+            // Clear all state
+            audioChunks = [];
+            restartCount = 0;
+            lastProcessTime = 0;
+            speechStartTime = null;
+            consecutiveSilenceCount = 0;
+            lastAudioLevel = 0;
+            
+            // Clear any remaining timers
+            if (silenceTimer) {
+                clearTimeout(silenceTimer);
+                silenceTimer = null;
+            }
+            if (fallbackTimer) {
+                clearInterval(fallbackTimer);
+                fallbackTimer = null;
+            }
+            
+            // Reset UI
+            recordButton.style.backgroundColor = '';
+            recordButton.classList.remove('recording');
+            startIcon.style.display = 'block';
+            recordingIcon.style.display = 'none';
+            
+            addMessage('🔄 Recording session reset. You can now start recording again.');
+        }
+        
+        // Add double-click to reset functionality
+        recordButton.addEventListener('dblclick', resetRecordingSession);
     </script>
     <style>
         /* 新增响应式设计 */

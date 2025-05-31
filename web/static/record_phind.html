@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>語音錄製應用</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-family: 'Microsoft JhengHei', sans-serif;
+        }
+        
+        #message-area {
+            height: 80vh;
+            overflow-y: auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        #control-area {
+            height: 20vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #ffffff;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        #record-button {
+            width: 64px;
+            height: 64px;
+            border: none;
+            border-radius: 50%;
+            background-color: #ffffff;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        #record-button:hover {
+            transform: scale(1.1);
+        }
+        
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .recording {
+            background-color: #ff4444 !important;
+        }
+        /* 文本输入框样式 */
+        #reference-text {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        #reference-text:focus {
+            border-color: #2196F3;
+            outline: none;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            #input-section {
+                width: 90%;
+                margin-right: 0;
+            }
+        }
+
+        /* 搜尋按鈕容器 */
+        .chat-type-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        /* 搜尋按鈕樣式 */
+        .chat-type-button {
+            /* padding: 8px 16px; */
+            border: 2px solid #bdbdbd; /* 改為淺灰色邊框 */
+            border-radius: 20px;
+            background-color: white;
+            color: #757575; /* 文字顏色改為中灰色 */
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            margin: 15px 0;  /* 增加上下間距 */
+            padding: 0 10px;  /* 增加左右內距 */
+        }
+        
+        /* 按鈕被按下的樣式 */
+        .chat-type-button.active {
+            background-color: #e0e0e0; /* 改為淺灰色背景 */
+            color: #424242; /* 文字顏色改為深灰色 */
+            border-color: #9e9e9e; /* 邊框顏色改為中灰色 */
+        }
+
+        /* 按鈕懸停效果 */
+        .chat-type-button:hover {
+            background-color: #f5f5f5; /* 非常淺的灰色 */
+        }
+        
+        .chat-type-button.active:hover {
+            background-color: #bdbdbd; /* 活動狀態下懸停時稍深的灰色 */
+        }
+    </style>
+</head>
+<body>
+    <div id="message-area"></div>
+    <div id="control-area">
+        <!-- <div class="chat-type-button">
+            <button id="free-speech-btn" class="chat-type-button active">Free Speech</button>
+        </div> -->
+        <div id="input-section" style="
+            width: 70%; 
+            margin-right: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        ">
+            
+            <!-- 调整后的文本输入框 -->
+            <textarea 
+                id="reference-text" 
+                placeholder="Scenario text will appear here..."
+                style="
+                    width: 90%;
+                    height: 50px;
+                    padding: 10px;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 8px;
+                    resize: vertical;
+                    font-family: 'Microsoft JhengHei', sans-serif;
+                    margin-bottom: 15px;
+                    transition: all 0.3s ease;
+                "
+            ></textarea>
+            
+            
+            <button 
+                id="record-button" 
+                style="
+                    width: 64px;  /* 恢复圆形尺寸 */
+                    height: 64px;
+                    border-radius: 50%;  /* 圆形设置 */
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                    transition: all 0.3s ease;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                "
+            >
+                
+                <svg id="start-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                </svg>
+                <svg id="recording-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                    <rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    
+    <script>
+        // Add this at the beginning of your script
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if accessing via IP address
+            const isIPAddress = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(window.location.hostname);
+            if (isIPAddress && window.location.protocol === 'http:') {
+                const messageArea = document.getElementById('message-area');
+                messageArea.innerHTML = `
+                    <div class="message" style="color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; margin: 10px; border-radius: 5px;">
+                        <h3>⚠️ 安全警告</h3>
+                        <p>您正在通過 IP 地址訪問此網站。為了使用錄音功能，請：</p>
+                        <ol>
+                            <li>使用 <a href="http://localhost:8000" style="color: #721c24; text-decoration: underline;">http://localhost:8000</a> 訪問此網站</li>
+                            <li>或設置 HTTPS 以使用 IP 地址訪問</li>
+                        </ol>
+                        <p>當前訪問地址：${window.location.href}</p>
+                    </div>
+                `;
+                // Disable the record button
+                const recordButton = document.getElementById('record-button');
+                if (recordButton) {
+                    recordButton.disabled = true;
+                    recordButton.style.opacity = '0.5';
+                    recordButton.style.cursor = 'not-allowed';
+                }
+            }
+        });
+
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+        let uploadInterval;
+        let silenceTimer = null;
+        let fallbackTimer = null;
+        let lastAudioLevel = 0;
+        let audioContext = null;
+        let analyser = null;
+        let dataArray = null;
+        let bufferLength = 0;
+        let consecutiveSilenceCount = 0;
+        let consecutiveSpeechCount = 0;
+        let hasValidSpeech = false;
+        
+        // Enhanced VAD parameters
+        const SILENCE_THRESHOLD = 0.008; // Lowered from 0.015 - more sensitive to quiet speech
+        const MIN_SPEECH_DURATION = 300; // Reduced from 500ms - start recording sooner
+        const SILENCE_DURATION = 2000; // 2 seconds of silence to trigger segmentation  
+        const FALLBACK_INTERVAL = 8000; // 8 seconds fallback to ensure chunks are processed
+        const MIN_CHUNK_SIZE = 2000; // Minimum chunk size in bytes
+        const SPECTRAL_THRESHOLD = 0.01; // Lowered from 0.02 - more sensitive to speech frequencies
+        const CONSECUTIVE_SILENCE_LIMIT = 10; // Number of consecutive silence checks before stopping
+        const CONSECUTIVE_SPEECH_LIMIT = 3; // Reduced from 5 - start recording after fewer speech detections
+
+        const messageArea = document.getElementById('message-area');
+        const recordButton = document.getElementById('record-button');
+        const startIcon = document.getElementById('start-icon');
+        const recordingIcon = document.getElementById('recording-icon');
+        
+        // 添加訊息到顯示區域
+        function addMessage(content, type = 'user') {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            messageDiv.innerHTML = marked.parse(content);
+            messageArea.appendChild(messageDiv);
+            messageArea.scrollTop = messageArea.scrollHeight;
+        }
+        
+        // 切換錄音狀態
+        function toggleRecording() {
+            if (!isRecording) {
+                startRecording();
+            } else {
+                stopRecording();
+            }
+        }
+        
+        // Enhanced audio level calculation with frequency analysis
+        function calculateEnhancedAudioLevel(audioData, frequencyData) {
+            // Time domain analysis (volume)
+            let timeSum = 0;
+            for (let i = 0; i < audioData.length; i++) {
+                timeSum += Math.abs(audioData[i]);
+            }
+            const timeLevel = timeSum / audioData.length;
+            
+            // Frequency domain analysis (spectral energy in speech range)
+            let spectralSum = 0;
+            const speechStart = Math.floor(frequencyData.length * 0.1); // ~300Hz
+            const speechEnd = Math.floor(frequencyData.length * 0.7);   // ~3400Hz
+            
+            for (let i = speechStart; i < speechEnd; i++) {
+                spectralSum += frequencyData[i];
+            }
+            const spectralLevel = spectralSum / (speechEnd - speechStart) / 255.0;
+            
+            // Combine time and frequency domain features
+            return {
+                timeLevel: timeLevel,
+                spectralLevel: spectralLevel,
+                combinedLevel: (timeLevel * 0.7) + (spectralLevel * 0.3)
+            };
+        }
+        
+        // Enhanced VAD decision making
+        function isValidSpeech(audioLevels) {
+            const { timeLevel, spectralLevel, combinedLevel } = audioLevels;
+            
+            // Multiple criteria for speech detection - made more permissive
+            const volumeCheck = timeLevel > SILENCE_THRESHOLD;
+            const spectralCheck = spectralLevel > SPECTRAL_THRESHOLD;
+            const combinedCheck = combinedLevel > (SILENCE_THRESHOLD * 0.6); // Lowered from 0.8
+            
+            // Require only 1 out of 3 criteria to be met (was 2 out of 3) - more permissive
+            const criteriaCount = [volumeCheck, spectralCheck, combinedCheck].filter(Boolean).length;
+            return criteriaCount >= 1;
+        }
+
+        // Function to handle enhanced silence detection with VAD
+        function handleEnhancedVAD(audioContext, stream) {
+            analyser = audioContext.createAnalyser();
+            const microphone = audioContext.createMediaStreamSource(stream);
+            microphone.connect(analyser);
+            
+            analyser.fftSize = 2048;
+            analyser.smoothingTimeConstant = 0.3;
+            
+            bufferLength = analyser.frequencyBinCount;
+            dataArray = new Float32Array(bufferLength);
+            const frequencyData = new Uint8Array(bufferLength);
+            
+            function checkEnhancedAudioLevel() {
+                if (!isRecording) return;
+                
+                analyser.getFloatTimeDomainData(dataArray);
+                analyser.getByteFrequencyData(frequencyData);
+                
+                const audioLevels = calculateEnhancedAudioLevel(dataArray, frequencyData);
+                const speechDetected = isValidSpeech(audioLevels);
+                
+                // Enhanced logging for debugging
+                if (speechDetected || audioLevels.timeLevel > SILENCE_THRESHOLD * 0.5) {
+                    console.log(`Audio Analysis - Time: ${audioLevels.timeLevel.toFixed(4)}, Spectral: ${audioLevels.spectralLevel.toFixed(4)}, Combined: ${audioLevels.combinedLevel.toFixed(4)}, Speech: ${speechDetected}`);
+                }
+                
+                if (speechDetected) {
+                    consecutiveSpeechCount++;
+                    consecutiveSilenceCount = 0;
+                    
+                    // Start recording valid speech after minimum duration
+                    if (consecutiveSpeechCount >= CONSECUTIVE_SPEECH_LIMIT) {
+                        hasValidSpeech = true;
+                    }
+                    
+                    // Cancel silence timer if speech is detected
+                    if (silenceTimer) {
+                        console.log('Speech detected, cancelling silence timer');
+                        clearTimeout(silenceTimer);
+                        silenceTimer = null;
+                    }
+                } else {
+                    consecutiveSilenceCount++;
+                    consecutiveSpeechCount = 0;
+                    
+                    // Only start silence timer if we have valid speech recorded
+                    if (hasValidSpeech && !silenceTimer) {
+                        console.log('Silence detected after speech, starting timer...');
+                        silenceTimer = setTimeout(() => {
+                            if (isRecording && audioChunks.length > 0 && hasValidSpeech) {
+                                console.log('Uploading chunk due to silence after speech');
+                                uploadAudioChunk();
+                                audioChunks = [];
+                                hasValidSpeech = false;
+                                consecutiveSilenceCount = 0;
+                                consecutiveSpeechCount = 0;
+                            }
+                            silenceTimer = null;
+                        }, SILENCE_DURATION);
+                    }
+                }
+                
+                requestAnimationFrame(checkEnhancedAudioLevel);
+            }
+            
+            checkEnhancedAudioLevel();
+        }
+
+        // 開始錄音
+        async function startRecording() {
+            try {
+                console.log('Starting recording...');
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        channelCount: 1,
+                        sampleRate: 16000,
+                        sampleSize: 16,
+                        volume: 1.0,
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    } 
+                });
+                
+                console.log('Got media stream');
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Resume audio context if it's suspended
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+                
+                // Reset VAD state
+                consecutiveSilenceCount = 0;
+                consecutiveSpeechCount = 0;
+                hasValidSpeech = false;
+                
+                handleEnhancedVAD(audioContext, stream);
+                
+                // Check supported MIME types with fallback options
+                const mimeTypes = [
+                    'audio/webm;codecs=opus',
+                    'audio/webm;codecs=vp8,opus',
+                    'audio/webm',
+                    'audio/mp4;codecs=mp4a.40.2',
+                    'audio/mp4',
+                    'audio/mpeg',
+                    'audio/wav'
+                ];
+                
+                let selectedMimeType = '';
+                let selectedOptions = {};
+                
+                console.log('Checking supported MIME types...');
+                for (const mimeType of mimeTypes) {
+                    const supported = MediaRecorder.isTypeSupported(mimeType);
+                    console.log(`${mimeType}: ${supported ? 'SUPPORTED' : 'not supported'}`);
+                    if (supported && !selectedMimeType) {
+                        selectedMimeType = mimeType;
+                        console.log('Selected MIME type:', selectedMimeType);
+                    }
+                }
+                
+                if (selectedMimeType) {
+                    selectedOptions = {
+                        mimeType: selectedMimeType,
+                        audioBitsPerSecond: 128000
+                    };
+                } else {
+                    console.warn('No supported MIME type found, using default');
+                    selectedOptions = {
+                        audioBitsPerSecond: 128000
+                    };
+                }
+                
+                console.log('MediaRecorder options:', selectedOptions);
+                
+                try {
+                    mediaRecorder = new MediaRecorder(stream, selectedOptions);
+                    console.log('MediaRecorder created successfully with options');
+                } catch (recordeError) {
+                    console.warn('Failed to create MediaRecorder with options, trying with default:', recordeError);
+                    try {
+                        mediaRecorder = new MediaRecorder(stream);
+                        console.log('MediaRecorder created with default options');
+                    } catch (defaultError) {
+                        console.error('Failed to create MediaRecorder even with default options:', defaultError);
+                        throw defaultError;
+                    }
+                }
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    console.log('Data available, size:', event.data.size, 'type:', event.data.type);
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onerror = (event) => {
+                    console.error('MediaRecorder error:', event.error);
+                    addMessage(`❌ Recording error: ${event.error}`);
+                };
+
+                mediaRecorder.onstart = () => {
+                    console.log('MediaRecorder started with MIME type:', mediaRecorder.mimeType);
+                };
+
+                // Capture chunks every 1 second
+                mediaRecorder.start(1000);
+                isRecording = true;
+                recordButton.classList.add('recording');
+                startIcon.style.display = 'none';
+                recordingIcon.style.display = 'block';
+                
+                // Enhanced fallback timer that only processes if we have valid speech
+                fallbackTimer = setInterval(() => {
+                    if (isRecording && audioChunks.length > 0 && hasValidSpeech) {
+                        console.log('Fallback timer triggered - uploading chunk');
+                        uploadAudioChunk();
+                        audioChunks = [];
+                        hasValidSpeech = false;
+                        consecutiveSilenceCount = 0;
+                        consecutiveSpeechCount = 0;
+                    }
+                }, FALLBACK_INTERVAL);
+                
+                addMessage('🎤 Recording started... Speak clearly and pause for 2 seconds to send messages.');
+
+            } catch (err) {
+                console.error('Error accessing microphone:', err);
+                addMessage(`❌ Error accessing microphone: ${err.message}`);
+            }
+        }
+        
+        // 停止錄音
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                console.log('Stopping recording...');
+                mediaRecorder.stop();
+                
+                // Clear all timers
+                if (silenceTimer) {
+                    clearTimeout(silenceTimer);
+                    silenceTimer = null;
+                }
+                if (fallbackTimer) {
+                    clearInterval(fallbackTimer);
+                    fallbackTimer = null;
+                }
+                
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                isRecording = false;
+                recordButton.classList.remove('recording');
+                startIcon.style.display = 'block';
+                recordingIcon.style.display = 'none';
+                
+                // Upload any remaining audio only if we have valid speech
+                if (audioChunks.length > 0 && hasValidSpeech) {
+                    console.log('Uploading final chunk...');
+                    uploadAudioChunk();
+                    audioChunks = [];
+                }
+                
+                // Reset VAD state
+                hasValidSpeech = false;
+                consecutiveSilenceCount = 0;
+                consecutiveSpeechCount = 0;
+                
+                addMessage('🛑 Recording stopped.');
+            }
+        }
+        
+        async function uploadAudioChunk() {
+            if (audioChunks.length === 0) return;
+        
+            const blobMimeType = 'audio/webm;codecs=opus';
+            const audioBlob = new Blob(audioChunks, { type: blobMimeType });
+            
+            // Enhanced validation before upload
+            if (audioBlob.size < MIN_CHUNK_SIZE) {
+                console.warn(`Audio chunk too small (${audioBlob.size} bytes), skipping`);
+                audioChunks = [];
+                return;
+            }
+            
+            // Only upload if we detected valid speech
+            if (!hasValidSpeech) {
+                console.warn('No valid speech detected in chunk, skipping upload');
+                audioChunks = [];
+                return;
+            }
+        
+            const formData = new FormData();
+            const filename = `chunk_${Date.now()}.webm`;
+            formData.append('audio', audioBlob, filename);
+        
+            try {
+                console.log(`Uploading audio chunk: ${filename}, size: ${audioBlob.size} bytes`);
+                const response = await fetch('/transcribe-chunk', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Audio-Format': 'webm',
+                        'X-Chunk-Count': audioChunks.length,
+                        'X-Has-Valid-Speech': hasValidSpeech.toString()
+                    }
+                });
+        
+                const data = await response.json();
+                
+                // Handle partial results
+                if (data.transcription && data.transcription.trim()) {
+                    addMessage(`You (partial): ${data.transcription}`);
+                }
+                
+                if (data.chat_response && !data.chat_response.includes('Sorry, there was an issue')) {
+                    addMessage(`Bot: ${data.chat_response}`);
+                } else if (data.chat_response && data.chat_response.includes('Sorry, there was an issue')) {
+                    console.warn('Server processing error:', data.chat_response);
+                    // Don't show repeated error messages to user
+                }
+        
+                audioChunks = [];
+            } catch (error) {
+                console.error('Upload failed, trying fallback:', error);
+                // Fallback: Try uploading as raw audio only if we have valid speech
+                if (hasValidSpeech) {
+                    await uploadAsRawAudio(audioBlob);
+                } else {
+                    console.warn('Skipping fallback upload due to no valid speech');
+                    audioChunks = [];
+                }
+            }
+        }
+
+        async function uploadAsRawAudio(audioBlob) {
+            const formData = new FormData();
+            formData.append('audio', audioBlob, `raw_${Date.now()}.webm`);
+            formData.append('force_raw', 'true');
+            
+            try {
+                const response = await fetch('/transcribe-chunk', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                if (data.error) {
+                    addMessage(`Error: ${data.error}`);
+                }
+            } catch (error) {
+                addMessage('Upload failed. Please try again.');
+            }
+        }
+
+
+        recordButton.addEventListener('click', toggleRecording);
+
+        // Add this at the beginning of your existing script
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get data from localStorage
+            const scenarioText = localStorage.getItem('scenarioText');
+            const selectedTopic = localStorage.getItem('selectedTopic');
+            const selectedLevel = localStorage.getItem('selectedLevel');
+            const selectedSegmentation = localStorage.getItem('selectedSegmentation');
+            
+            // Display scenario text
+            if (scenarioText) {
+                document.getElementById('reference-text').value = scenarioText;
+            }
+            
+            // Clear localStorage after retrieving data
+            localStorage.removeItem('scenarioText');
+            localStorage.removeItem('selectedTopic');
+            localStorage.removeItem('selectedLevel');
+            localStorage.removeItem('selectedSegmentation');
+        });
+    </script>
+    <style>
+        /* 新增响应式设计 */
+        @media (max-width: 768px) {
+            #input-section {
+                width: 90%;
+            }
+            #reference-text {
+                width: 100%;  /* 小屏幕时占满宽度 */
+            }
+        }
+
+        /* 按钮交互优化 */
+        #record-button:hover {
+            transform: scale(1.1);
+            background-color: #f8f8f8;
+        }
+
+        #record-button:active {
+            transform: scale(0.95);
+        }
+
+        /* 输入框聚焦效果 */
+        #reference-text:focus {
+            border-color: #2196F3;
+            box-shadow: 0 0 5px rgba(33,150,243,0.3);
+        }
+    </style>
+</body>
+</html>
+
+    
+    

@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>語音錄製應用</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-family: 'Microsoft JhengHei', sans-serif;
+        }
+        
+        #message-area {
+            height: 80vh;
+            overflow-y: auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        #control-area {
+            height: 20vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #ffffff;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        #record-button {
+            width: 64px;
+            height: 64px;
+            border: none;
+            border-radius: 50%;
+            background-color: #ffffff;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        #record-button:hover {
+            transform: scale(1.1);
+        }
+        
+        .message {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #ffffff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .recording {
+            background-color: #ff4444 !important;
+        }
+        /* 文本输入框样式 */
+        #reference-text {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        #reference-text:focus {
+            border-color: #2196F3;
+            outline: none;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            #input-section {
+                width: 90%;
+                margin-right: 0;
+            }
+        }
+
+        /* 搜尋按鈕容器 */
+        .chat-type-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        /* 搜尋按鈕樣式 */
+        .chat-type-button {
+            /* padding: 8px 16px; */
+            border: 2px solid #bdbdbd; /* 改為淺灰色邊框 */
+            border-radius: 20px;
+            background-color: white;
+            color: #757575; /* 文字顏色改為中灰色 */
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            margin: 15px 0;  /* 增加上下間距 */
+            padding: 0 10px;  /* 增加左右內距 */
+        }
+        
+        /* 按鈕被按下的樣式 */
+        .chat-type-button.active {
+            background-color: #e0e0e0; /* 改為淺灰色背景 */
+            color: #424242; /* 文字顏色改為深灰色 */
+            border-color: #9e9e9e; /* 邊框顏色改為中灰色 */
+        }
+
+        /* 按鈕懸停效果 */
+        .chat-type-button:hover {
+            background-color: #f5f5f5; /* 非常淺的灰色 */
+        }
+        
+        .chat-type-button.active:hover {
+            background-color: #bdbdbd; /* 活動狀態下懸停時稍深的灰色 */
+        }
+    </style>
+</head>
+<body>
+    <div id="message-area"></div>
+    <div id="control-area">
+        <!-- <div class="chat-type-button">
+            <button id="free-speech-btn" class="chat-type-button active">Free Speech</button>
+        </div> -->
+        <div id="input-section" style="
+            width: 70%; 
+            margin-right: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        ">
+            
+            <!-- 调整后的文本输入框 -->
+            <textarea 
+                id="reference-text" 
+                placeholder="Scenario text will appear here..."
+                style="
+                    width: 90%;
+                    height: 50px;
+                    padding: 10px;
+                    border: 1px solid #e0e0e0;
+                    border-radius: 8px;
+                    resize: vertical;
+                    font-family: 'Microsoft JhengHei', sans-serif;
+                    margin-bottom: 15px;
+                    transition: all 0.3s ease;
+                "
+            ></textarea>
+            
+            
+            <button 
+                id="record-button" 
+                style="
+                    width: 64px;  /* 恢复圆形尺寸 */
+                    height: 64px;
+                    border-radius: 50%;  /* 圆形设置 */
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                    transition: all 0.3s ease;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                "
+            >
+                
+                <svg id="start-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                </svg>
+                <svg id="recording-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                    <rect x="5" y="5" width="14" height="14" rx="2" fill="currentColor"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    
+    <script>
+        // Add this at the beginning of your script
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if accessing via IP address
+            const isIPAddress = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(window.location.hostname);
+            if (isIPAddress && window.location.protocol === 'http:') {
+                const messageArea = document.getElementById('message-area');
+                messageArea.innerHTML = `
+                    <div class="message" style="color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; margin: 10px; border-radius: 5px;">
+                        <h3>⚠️ 安全警告</h3>
+                        <p>您正在通過 IP 地址訪問此網站。為了使用錄音功能，請：</p>
+                        <ol>
+                            <li>使用 <a href="http://localhost:8000" style="color: #721c24; text-decoration: underline;">http://localhost:8000</a> 訪問此網站</li>
+                            <li>或設置 HTTPS 以使用 IP 地址訪問</li>
+                        </ol>
+                        <p>當前訪問地址：${window.location.href}</p>
+                    </div>
+                `;
+                // Disable the record button
+                const recordButton = document.getElementById('record-button');
+                if (recordButton) {
+                    recordButton.disabled = true;
+                    recordButton.style.opacity = '0.5';
+                    recordButton.style.cursor = 'not-allowed';
+                }
+            }
+        });
+
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+        let chatType = 1;
+        
+        const messageArea = document.getElementById('message-area');
+        const recordButton = document.getElementById('record-button');
+        const startIcon = document.getElementById('start-icon');
+        const recordingIcon = document.getElementById('recording-icon');
+        // const freespeechButton = document.getElementById('free-speech-btn');
+        //const referenceTextInput = document.getElementById('reference-text');
+
+        //adjust chat-type-buttons status and outlooks
+        //add event listener
+        // freespeechButton.addEventListener('click', () => {
+        //     chatType = 1;
+        //     freespeechButton.classList.add('active');
+        //     // tagButton.classList.remove('active');
+        //     // webButton.classList.remove('active');
+        // });
+        
+        // 添加訊息到顯示區域
+        function addMessage(content, type = 'user') {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            messageDiv.innerHTML = marked.parse(content);
+            messageArea.appendChild(messageDiv);
+            messageArea.scrollTop = messageArea.scrollHeight;
+        }
+        
+        // 切換錄音狀態
+        function toggleRecording() {
+            if (!isRecording) {
+                startRecording();
+            } else {
+                stopRecording();
+            }
+        }
+        
+        // 開始錄音
+        async function startRecording() {
+            try {
+                // Debug information
+                console.log('Checking mediaDevices support...');
+                console.log('navigator.mediaDevices:', navigator.mediaDevices);
+                
+                // Check if browser supports getUserMedia
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    throw new Error('您的瀏覽器不支援錄音功能。請使用 Chrome、Firefox、Safari 或 Edge 的最新版本。');
+                }
+
+                // First check if we have permission
+                try {
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    const audioDevices = devices.filter(device => device.kind === 'audioinput');
+                    console.log('Available audio devices:', audioDevices);
+                    
+                    if (audioDevices.length === 0) {
+                        throw new Error('找不到麥克風設備。');
+                    }
+                } catch (deviceError) {
+                    console.error('Error enumerating devices:', deviceError);
+                    throw new Error('無法訪問麥克風設備。請確保已授予麥克風權限。');
+                }
+
+                // Request microphone access with explicit constraints
+                console.log('Requesting microphone access...');
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true,
+                        sampleRate: 44100,
+                        channelCount: 1
+                    }
+                });
+                
+                console.log('Microphone access granted:', stream);
+                
+                mediaRecorder = new MediaRecorder(stream);
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    audioChunks.push(event.data);
+                };
+                
+                mediaRecorder.onstop = sendAudioData;
+                
+                audioChunks = [];
+                mediaRecorder.start();
+                isRecording = true;
+                
+                recordButton.classList.add('recording');
+                startIcon.style.display = 'none';
+                recordingIcon.style.display = 'block';
+                
+                addMessage('開始錄音...');
+            } catch (error) {
+                console.error('錄音錯誤:', error);
+                let errorMessage = '錄音錯誤: ';
+                
+                if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+                    errorMessage += '請允許瀏覽器使用麥克風。請點擊網址列左側的鎖頭圖示，並確保麥克風權限已開啟。';
+                } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+                    errorMessage += '找不到麥克風設備。請確認您的電腦已連接麥克風。';
+                } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+                    errorMessage += '麥克風可能被其他應用程式使用中。請關閉其他可能使用麥克風的應用程式。';
+                } else if (error.name === 'OverconstrainedError') {
+                    errorMessage += '麥克風不支援要求的設定。';
+                } else if (error.name === 'TypeError' || error.name === 'TypeError') {
+                    errorMessage += '您的瀏覽器不支援錄音功能。請使用 Chrome、Firefox、Safari 或 Edge 的最新版本。';
+                } else {
+                    errorMessage += error.message;
+                }
+                
+                addMessage(errorMessage);
+                
+                // Reset recording state
+                isRecording = false;
+                recordButton.classList.remove('recording');
+                startIcon.style.display = 'block';
+                recordingIcon.style.display = 'none';
+            }
+        }
+        
+        // 停止錄音
+        function stopRecording() {
+            mediaRecorder.stop();
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            isRecording = false;
+            
+            recordButton.classList.remove('recording');
+            startIcon.style.display = 'block';
+            recordingIcon.style.display = 'none';
+            
+            addMessage('錄音結束，正在處理...');
+        }
+        
+        
+        // 發送音頻數據到後端
+        async function sendAudioData() {
+            //const referenceText = referenceTextInput.value.trim();
+            //if (!referenceText) {
+                //addMessage('錯誤：請輸入參考文本');
+                //addMessage('手動加入參考文本(目前未需要)');
+                //return;
+           // }
+            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'recording.webm');
+            //formData.append('reference_text', referenceText);  // 添加参考文本
+            try {
+                const response = await fetch('/upload-audio', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                addMessage(`處理結果：${JSON.stringify(result.message)}`);
+                addMessage(`轉譯的參考文本：${JSON.stringify(result.ref_txt)}`)
+                addMessage(`評估結果：${JSON.stringify(result.assessment, null, 2)}`);
+            } catch (error) {
+                console.error('上傳錯誤:', error);
+                addMessage(`上傳錯誤: ${error.message}`);
+            }
+        }
+        recordButton.addEventListener('click', toggleRecording);
+
+        // Add this at the beginning of your existing script
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get data from localStorage
+            const scenarioText = localStorage.getItem('scenarioText');
+            const selectedTopic = localStorage.getItem('selectedTopic');
+            const selectedLevel = localStorage.getItem('selectedLevel');
+            const selectedSegmentation = localStorage.getItem('selectedSegmentation');
+            
+            // Display scenario text
+            if (scenarioText) {
+                document.getElementById('reference-text').value = scenarioText;
+            }
+            
+            // Clear localStorage after retrieving data
+            localStorage.removeItem('scenarioText');
+            localStorage.removeItem('selectedTopic');
+            localStorage.removeItem('selectedLevel');
+            localStorage.removeItem('selectedSegmentation');
+        });
+    </script>
+    <style>
+        /* 新增响应式设计 */
+        @media (max-width: 768px) {
+            #input-section {
+                width: 90%;
+            }
+            #reference-text {
+                width: 100%;  /* 小屏幕时占满宽度 */
+            }
+        }
+
+        /* 按钮交互优化 */
+        #record-button:hover {
+            transform: scale(1.1);
+            background-color: #f8f8f8;
+        }
+
+        #record-button:active {
+            transform: scale(0.95);
+        }
+
+        /* 输入框聚焦效果 */
+        #reference-text:focus {
+            border-color: #2196F3;
+            box-shadow: 0 0 5px rgba(33,150,243,0.3);
+        }
+    </style>
+</body>
+</html>
+
+    
+    
